@@ -6,7 +6,6 @@
 <title>AI App Mobile Intelligence</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4"></script>
 <style>
 :root{
   --bg:#0f1117;--card:#181b26;--card2:#1e2130;--border:#2a2e42;
@@ -138,16 +137,6 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
 .event-modal-section-title{font-size:.75rem;font-weight:600;color:var(--sub);text-transform:uppercase;margin-bottom:8px}
 .event-modal-section-content{font-size:.85rem;line-height:1.6;color:var(--text)}
 .event-app-badge{display:inline-flex;padding:4px 10px;border-radius:6px;font-size:.75rem;font-weight:600;margin-bottom:12px}
-/* ── country modal ── */
-.country-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:1000;align-items:center;justify-content:center;padding:20px}
-.country-modal.show{display:flex}
-.country-modal-content{background:var(--card);border:1px solid var(--border);border-radius:14px;max-width:900px;width:100%;max-height:90vh;overflow-y:auto}
-.country-modal-header{padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
-.country-modal-title{font-size:1.2rem;font-weight:700;color:var(--text)}
-.country-modal-subtitle{font-size:.85rem;color:var(--sub);margin-top:4px}
-.country-modal-close{background:none;border:none;color:var(--sub);font-size:1.5rem;cursor:pointer;padding:0;line-height:1}
-.country-modal-close:hover{color:var(--text)}
-.country-modal-body{padding:20px}
 /* ── upload section ── */
 .upload-section{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:20px;overflow:hidden}
 .upload-header{padding:14px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:.2s}
@@ -348,33 +337,38 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
   </div>
 </div>
 
-<!-- Row 3: World Map -->
-<div class="section">
-  <div class="section-header">
-    <div>
-      <div class="section-title">🌍 Global Distribution</div>
-      <div class="section-sub">Feb 2026 · Click country to see trends</div>
-    </div>
-    <div class="tabs" id="mapMetricTabs">
-      <button class="tab active" onclick="setMapMetric('dl',this)">Downloads</button>
-      <button class="tab" onclick="setMapMetric('mau',this)">MAU</button>
-    </div>
-  </div>
-  <div class="chart-wrap"><canvas id="worldMap" height="400"></canvas></div>
-</div>
-
-<!-- Country Detail Modal -->
-<div class="country-modal" id="countryModal" onclick="if(event.target===this) closeCountryModal()">
-  <div class="country-modal-content">
-    <div class="country-modal-header">
+<!-- Row 3: Countries -->
+<div class="row2">
+  <div class="section">
+    <div class="section-header">
       <div>
-        <div class="country-modal-title" id="countryModalTitle"></div>
-        <div class="country-modal-subtitle" id="countryModalSubtitle"></div>
+        <div class="section-title">Top 20 Countries</div>
+        <div class="section-sub">Feb 2026</div>
       </div>
-      <button class="country-modal-close" onclick="closeCountryModal()">&times;</button>
+      <div class="tabs" id="ctryMetricTabs">
+        <button class="tab active" onclick="setCtryMetric('dl',this)">Downloads</button>
+        <button class="tab" onclick="setCtryMetric('mau',this)">MAU</button>
+      </div>
     </div>
-    <div class="country-modal-body">
-      <canvas id="countryTrendChart" height="200"></canvas>
+    <div class="chart-wrap"><canvas id="ctryChart" height="300"></canvas></div>
+  </div>
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Country Rankings</div>
+        <div class="section-sub">Feb 2026 · Downloads + MAU (M)</div>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+    <table id="ctryTable">
+      <thead><tr>
+        <th>Country</th>
+        <th style="color:var(--gpt)">GPT DL</th><th style="color:var(--gpt)">GPT MAU</th>
+        <th style="color:var(--gem)">GEM DL</th><th style="color:var(--gem)">GEM MAU</th>
+        <th style="color:var(--cla)">CLA DL</th><th style="color:var(--cla)">CLA MAU</th>
+      </tr></thead>
+      <tbody id="ctryBody"></tbody>
+    </table>
     </div>
   </div>
 </div>
@@ -1623,7 +1617,7 @@ function toggleApp(app, visible){
   // Rebuild charts that show multiple apps
   buildTrend();
   buildShare();
-  buildWorldMap();
+  buildCtry();
   generateInsights();
   // buildPlat shows one app at a time, no need to rebuild
 }
@@ -1919,201 +1913,76 @@ function setShareMetric(m,btn){
 
 // ── Country Bar Chart ─────────────────────────────────────────────────────────
 let ctryMetric='dl';
-let mapChart, countryTrendChart;
-let mapMetric = 'dl';
-
-async function buildWorldMap(){
-  const src = mapMetric === 'dl' ? DATA.country_bar_dl : DATA.country_bar_mau;
-
-  // Fetch world topology
-  const response = await fetch('https://unpkg.com/world-atlas@2.0.2/countries-50m.json');
-  const worldData = await response.json();
-
-  // ISO numeric to our country code mapping
-  const isoMapping = {
-    '356': 'IN', // India
-    '840': 'US', // USA
-    '076': 'BR', // Brazil
-    '360': 'ID', // Indonesia
-    '586': 'PK', // Pakistan
-    '484': 'MX', // Mexico
-    '792': 'TR', // Turkey
-    '818': 'EG', // Egypt
-    '704': 'VN', // Vietnam
-    '276': 'DE', // Germany
-    '764': 'TH', // Thailand
-    '392': 'JP', // Japan
-    '682': 'SA', // Saudi Arabia
-    '250': 'FR', // France
-    '826': 'GB', // UK
-    '050': 'BD', // Bangladesh
-    '170': 'CO', // Colombia
-    '608': 'PH', // Philippines
-    '410': 'KR', // South Korea
-    '566': 'NG'  // Nigeria
-  };
-
-  // Calculate total for each country (sum of all apps)
-  const countryTotals = {};
-  Object.keys(src).forEach(code => {
-    let total = 0;
-    APPS.forEach(app => {
-      if(VISIBLE_APPS[app] && src[code] && src[code][app]){
-        total += src[code][app];
-      }
-    });
-    countryTotals[code] = total;
-  });
-
-  // Create features with values
-  const features = ChartGeo.topojson.feature(worldData, worldData.objects.countries).features;
-
-  features.forEach(f => {
-    const id = f.id; // ISO numeric code
-    const code = isoMapping[id];
-    f.properties.value = code && countryTotals[code] ? countryTotals[code] : 0;
-    f.properties.code = code;
-    f.properties.displayName = code ? DATA.country_names[code] : f.properties.name;
-  });
-
-  const ctx = document.getElementById('worldMap').getContext('2d');
-  if(mapChart) mapChart.destroy();
-
-  mapChart = new Chart(ctx, {
-    type: 'choropleth',
-    data: {
-      labels: features.map(d => d.properties.name),
-      datasets: [{
-        label: mapMetric === 'dl' ? 'Downloads (M)' : 'MAU (M)',
-        data: features.map(d => ({feature: d, value: d.properties.value})),
-      }]
+let ctryChart;
+function buildCtry(){
+  const src  = ctryMetric==='dl' ? DATA.country_bar_dl : DATA.country_bar_mau;
+  const top  = DATA.top20;
+  const names= DATA.country_names;
+  const labels = top.map(c=>names[c]||c);
+  const ctx = document.getElementById('ctryChart').getContext('2d');
+  if(ctryChart) ctryChart.destroy();
+  ctryChart = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets: APPS.filter(app => VISIBLE_APPS[app]).map(app=>({
+        label:C[app].label,
+        data:top.map(c=>src[c]?src[c][app]:0),
+        backgroundColor:C[app].fill.replace('.12','.7'),
+        borderColor:C[app].color,
+        borderWidth:1
+      }))
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      onClick: (evt, elements) => {
-        if(elements.length > 0){
-          const feature = features[elements[0].index];
-          if(feature.properties.code && feature.properties.value > 0){
-            showCountryDetail(feature.properties.code);
-          }
-        }
-      },
-      plugins: {
-        legend: {display: false},
-        tooltip: {
-          callbacks: {
-            label: (ctx) => {
-              const feature = ctx.raw.feature;
-              const code = feature.properties.code;
-              const displayName = feature.properties.displayName || feature.properties.name;
-              if(!code || !src[code]) return displayName + ': No data';
-              const apps = APPS.filter(app => VISIBLE_APPS[app]);
-              const lines = [displayName + ':'];
-              apps.forEach(app => {
-                const val = src[code][app] || 0;
-                lines.push(`  ${C[app].label}: ${val.toFixed(2)}M`);
-              });
-              return lines;
-            }
-          }
-        }
-      },
-      scales: {
-        projection: {
-          axis: 'x',
-          projection: 'equalEarth'
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
+        tooltip:{callbacks:{label:i=>' '+i.dataset.label+': '+i.parsed.x.toFixed(2)+'M'}}},
+      scales:{
+        x:{
+          grid:gridCfg,
+          beginAtZero:true,
+          grace:'5%',
+          ticks:{callback:v=>v+'M',font:{size:10}}
         },
-        color: {
-          axis: 'x',
-          quantize: 5,
-          legend: {
-            position: 'bottom-right',
-            align: 'bottom'
-          },
-          interpolate: (v) => {
-            const colors = ['#1a1d2e', '#16537e', '#1e88e5', '#42a5f5', '#90caf9'];
-            const idx = Math.min(Math.floor(v * colors.length), colors.length - 1);
-            return colors[idx];
-          }
-        }
+        y:{grid:gridCfg,ticks:{font:{size:10}}}
       }
     }
   });
 }
-
-function setMapMetric(m, btn){
-  mapMetric = m;
-  document.querySelectorAll('#mapMetricTabs .tab').forEach(b => b.classList.remove('active'));
+function setCtryMetric(m,btn){
+  ctryMetric=m;
+  document.querySelectorAll('#ctryMetricTabs .tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  buildWorldMap();
+  buildCtry();
 }
 
-function showCountryDetail(code){
-  const modal = document.getElementById('countryModal');
-  const title = document.getElementById('countryModalTitle');
-  const subtitle = document.getElementById('countryModalSubtitle');
+// ── Country Table ─────────────────────────────────────────────────────────────
+function buildCtryTable(){
+  const top   = DATA.top20;
+  const names = DATA.country_names;
+  const dlSrc = DATA.country_bar_dl;
+  const mauSrc= DATA.country_bar_mau;
+  const dlMax = Math.max(...top.map(c=>dlSrc[c]?dlSrc[c].chatgpt+dlSrc[c].gemini+(dlSrc[c].claude||0):0));
+  const mauMax= Math.max(...top.map(c=>mauSrc[c]?mauSrc[c].chatgpt+mauSrc[c].gemini+(mauSrc[c].claude||0):0));
 
-  const countryName = DATA.country_names[code];
-  const dlData = DATA.country_bar_dl[code];
-  const mauData = DATA.country_bar_mau[code];
-
-  title.textContent = countryName;
-  subtitle.textContent = `Downloads & MAU trends for ${code}`;
-
-  // Create trend chart
-  const ctx = document.getElementById('countryTrendChart').getContext('2d');
-  if(countryTrendChart) countryTrendChart.destroy();
-
-  const months = DATA.dl_months.slice(-6); // Last 6 months
-
-  countryTrendChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: months,
-      datasets: APPS.filter(app => VISIBLE_APPS[app]).flatMap(app => [
-        {
-          label: C[app].label + ' Downloads',
-          data: months.map(() => dlData[app] / 6), // Simplified - should use actual monthly data
-          borderColor: C[app].color,
-          backgroundColor: C[app].fill,
-          borderWidth: 2,
-          borderDash: [5, 5]
-        },
-        {
-          label: C[app].label + ' MAU',
-          data: months.map(() => mauData[app] / 6),
-          borderColor: C[app].color,
-          backgroundColor: C[app].fill,
-          borderWidth: 2
-        }
-      ])
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {position: 'bottom', labels: {boxWidth: 10, font: {size: 10}}},
-        tooltip: {callbacks: {label: i => ' ' + i.dataset.label + ': ' + i.parsed.y.toFixed(2) + 'M'}}
-      },
-      scales: {
-        y: {beginAtZero: true, ticks: {callback: v => v + 'M'}}
-      }
-    }
+  let rows='';
+  top.forEach(c=>{
+    const dl = dlSrc[c]||{chatgpt:0,gemini:0,claude:0};
+    const ma = mauSrc[c]||{chatgpt:0,gemini:0,claude:0};
+    rows += '<tr>';
+    rows += '<td style="font-weight:600">'+(names[c]||c)+'</td>';
+    rows += '<td><div class="mini-bar-wrap"><div class="mini-bar" style="width:'+(dl.chatgpt/dlMax*100).toFixed(1)+'%;background:#10a37f"></div></div>'+dl.chatgpt.toFixed(2)+'</td>';
+    rows += '<td><div class="mini-bar-wrap"><div class="mini-bar" style="width:'+(ma.chatgpt/mauMax*100).toFixed(1)+'%;background:#10a37f"></div></div>'+ma.chatgpt.toFixed(2)+'</td>';
+    rows += '<td><div class="mini-bar-wrap"><div class="mini-bar" style="width:'+(dl.gemini/dlMax*100).toFixed(1)+'%;background:#4285F4"></div></div>'+dl.gemini.toFixed(2)+'</td>';
+    rows += '<td><div class="mini-bar-wrap"><div class="mini-bar" style="width:'+(ma.gemini/mauMax*100).toFixed(1)+'%;background:#4285F4"></div></div>'+ma.gemini.toFixed(2)+'</td>';
+    rows += '<td><div class="mini-bar-wrap"><div class="mini-bar" style="width:'+(dl.claude/dlMax*100).toFixed(1)+'%;background:#e8834a"></div></div>'+dl.claude.toFixed(2)+'</td>';
+    rows += '<td><div class="mini-bar-wrap"><div class="mini-bar" style="width:'+(ma.claude/mauMax*100).toFixed(1)+'%;background:#e8834a"></div></div>'+ma.claude.toFixed(2)+'</td>';
+    rows += '</tr>';
   });
-
-  modal.classList.add('show');
+  document.getElementById('ctryBody').innerHTML = rows;
 }
-
-function closeCountryModal(){
-  const modal = document.getElementById('countryModal');
-  modal.classList.remove('show');
-  if(countryTrendChart) {
-    countryTrendChart.destroy();
-    countryTrendChart = null;
-  }
-}
-
-// ── Country Table removed - using interactive world map instead ─────────────
 
 // ── CSV Upload Feature ───────────────────────────────────────────────────────
 const UPLOAD_STATE = {
@@ -2475,7 +2344,8 @@ function processUpload(){
     buildTrend();
     buildPlat();
     buildShare();
-    buildWorldMap();
+    buildCtry();
+    buildCtryTable();
     generateInsights();
 
     // Show success message
@@ -3067,7 +2937,8 @@ buildKPIs();
 buildTrend();
 buildPlat();
 buildShare();
-buildWorldMap();
+buildCtry();
+buildCtryTable();
 buildTimeline();
 generateInsights();
 </script>
