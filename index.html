@@ -83,6 +83,25 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
 .app-checkbox input[type="checkbox"]{cursor:pointer;width:16px;height:16px}
 .app-checkbox label{cursor:pointer;font-size:.85rem;color:var(--sub);font-weight:500}
 .app-checkbox input:checked + label{color:var(--txt)}
+/* ── insights section ── */
+.insights-section{background:linear-gradient(135deg,var(--card) 0%,var(--card2) 100%);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px}
+.insights-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.insights-icon{font-size:1.4rem}
+.insights-title{font-size:1rem;font-weight:700;color:var(--text);flex:1}
+.insights-badge{background:var(--gpt);color:white;font-size:.7rem;padding:3px 10px;border-radius:12px;font-weight:600}
+.insights-grid{display:grid;gap:10px}
+.insight-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;transition:.2s}
+.insight-item:hover{border-color:var(--sub);transform:translateX(2px)}
+.insight-rank{font-size:1.1rem;font-weight:700;color:var(--sub);min-width:26px;opacity:.6}
+.insight-content{flex:1}
+.insight-text{font-size:.85rem;line-height:1.5;color:var(--text);margin-bottom:4px}
+.insight-meta{font-size:.7rem;color:var(--sub);display:flex;align-items:center;gap:8px}
+.insight-tag{background:var(--card2);padding:2px 8px;border-radius:4px;font-weight:500}
+.insight-tag.growth{color:#34d399}
+.insight-tag.decline{color:#f87171}
+.insight-tag.share{color:#fbbf24}
+.insight-tag.platform{color:#60a5fa}
+.insight-tag.geo{color:#a78bfa}
 /* ── upload section ── */
 .upload-section{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:20px;overflow:hidden}
 .upload-header{padding:14px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:.2s}
@@ -214,6 +233,16 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
 
 <!-- KPI Cards -->
 <div class="kpi-row" id="kpiRow"></div>
+
+<!-- Data Insights -->
+<div class="insights-section">
+  <div class="insights-header">
+    <span class="insights-icon">💡</span>
+    <div class="insights-title">AI-Generated Data Insights</div>
+    <div class="insights-badge">AUTO</div>
+  </div>
+  <div class="insights-grid" id="insightsGrid"></div>
+</div>
 
 <!-- Main Trend Chart -->
 <div class="section">
@@ -1524,6 +1553,7 @@ function setGranularity(gran, btn){
   buildTrend();
   buildPlat();
   buildShare();
+  generateInsights();
 }
 
 function toggleApp(app, visible){
@@ -1532,6 +1562,7 @@ function toggleApp(app, visible){
   buildTrend();
   buildShare();
   buildCtry();
+  generateInsights();
   // buildPlat shows one app at a time, no need to rebuild
 }
 
@@ -2243,6 +2274,7 @@ function processUpload(){
     buildShare();
     buildCtry();
     buildCtryTable();
+    generateInsights();
 
     // Show success message
     messageEl.className = 'upload-message success show';
@@ -2332,6 +2364,299 @@ function downloadTemplate(type){
   URL.revokeObjectURL(url);
 }
 
+// ── Generate Insights ─────────────────────────────────────────────────────────
+function generateInsights(){
+  const insights = [];
+
+  // Use weekly data for recent trends (last 4 weeks)
+  const useWeekly = WEEKLY_DATA && WEEKLY_DATA.dl_weeks && WEEKLY_DATA.dl_weeks.length > 0;
+
+  if(useWeekly){
+    const weeks = WEEKLY_DATA.dl_weeks;
+    const dl = WEEKLY_DATA.dl;
+    const wau = WEEKLY_DATA.wau;
+    const dlIos = WEEKLY_DATA.dl_ios;
+    const dlAndroid = WEEKLY_DATA.dl_android;
+
+    // Recent 4 weeks (for trend analysis)
+    const recentWeeks = 4;
+    const lastIdx = weeks.length - 1;
+    const startIdx = Math.max(0, lastIdx - recentWeeks + 1);
+
+    // 1. Weekly Download Trend Analysis
+    APPS.forEach(app => {
+      if(!VISIBLE_APPS[app]) return;
+
+      const recentDls = dl[app].slice(startIdx);
+      if(recentDls.length >= 2){
+        const latest = recentDls[recentDls.length - 1];
+        const previous = recentDls[recentDls.length - 2];
+        const change = ((latest - previous) / previous * 100);
+
+        if(Math.abs(change) > 5){
+          insights.push({
+            text: `${C[app].label} downloads ${change > 0 ? 'surged' : 'declined'} ${Math.abs(change).toFixed(1)}% this week (${latest.toFixed(1)}M vs ${previous.toFixed(1)}M last week)`,
+            type: change > 0 ? 'growth' : 'decline',
+            priority: Math.abs(change)
+          });
+        }
+      }
+    });
+
+    // 2. 4-Week Trend Pattern
+    APPS.forEach(app => {
+      if(!VISIBLE_APPS[app]) return;
+
+      const recentDls = dl[app].slice(startIdx);
+      if(recentDls.length >= 4){
+        const avgFirst2 = (recentDls[0] + recentDls[1]) / 2;
+        const avgLast2 = (recentDls[2] + recentDls[3]) / 2;
+        const trendChange = ((avgLast2 - avgFirst2) / avgFirst2 * 100);
+
+        if(Math.abs(trendChange) > 10){
+          insights.push({
+            text: `${C[app].label} shows ${trendChange > 0 ? 'accelerating growth' : 'weakening momentum'} over the last 4 weeks (${trendChange > 0 ? '+' : ''}${trendChange.toFixed(1)}% trend)`,
+            type: trendChange > 0 ? 'growth' : 'decline',
+            priority: Math.abs(trendChange) * 0.8
+          });
+        }
+      }
+    });
+
+    // 3. WAU Analysis (if available)
+    if(wau && wau.chatgpt && wau.chatgpt.length > 0){
+      const wauWeeks = WEEKLY_DATA.wau_weeks;
+      const wauLastIdx = wauWeeks.length - 1;
+
+      APPS.forEach(app => {
+        if(!VISIBLE_APPS[app]) return;
+
+        if(wau[app][wauLastIdx] > 0){
+          const latestWau = wau[app][wauLastIdx];
+          const latestDl = dl[app][lastIdx];
+
+          // Engagement ratio (WAU/Downloads as a proxy for retention)
+          if(latestDl > 0){
+            const ratio = latestWau / latestDl;
+            if(ratio > 10){
+              insights.push({
+                text: `${C[app].label} has exceptionally high user retention: ${latestWau.toFixed(1)}M WAU vs ${latestDl.toFixed(1)}M weekly downloads (${ratio.toFixed(1)}x ratio)`,
+                type: 'growth',
+                priority: 30
+              });
+            }
+          }
+        }
+      });
+    }
+
+    // 4. Platform Preference Shift
+    APPS.forEach(app => {
+      if(!VISIBLE_APPS[app]) return;
+
+      const recentIos = dlIos[app].slice(startIdx);
+      const recentAndroid = dlAndroid[app].slice(startIdx);
+
+      if(recentIos.length >= 4 && recentAndroid.length >= 4){
+        const iosShareStart = recentIos[0] / (recentIos[0] + recentAndroid[0]) * 100;
+        const iosShareEnd = recentIos[recentIos.length - 1] / (recentIos[recentIos.length - 1] + recentAndroid[recentAndroid.length - 1]) * 100;
+        const shareShift = iosShareEnd - iosShareStart;
+
+        if(Math.abs(shareShift) > 3){
+          insights.push({
+            text: `${C[app].label} seeing ${shareShift > 0 ? 'iOS' : 'Android'} momentum shift: ${shareShift > 0 ? 'iOS' : 'Android'} share grew ${Math.abs(shareShift).toFixed(1)}pp (now ${shareShift > 0 ? iosShareEnd.toFixed(1) : (100-iosShareEnd).toFixed(1)}%)`,
+            type: 'platform',
+            priority: Math.abs(shareShift) * 2
+          });
+        }
+      }
+    });
+  }
+
+  // Use monthly data for broader insights
+  const months = DATA.dl_months;
+  const lastMonthIdx = months.length - 1;
+
+  // 5. Market Share Battle
+  const mauShares = APPS.filter(app => VISIBLE_APPS[app]).map(app => ({
+    app,
+    share: DATA.mau_share[app][lastMonthIdx],
+    mau: DATA.mau[app][lastMonthIdx]
+  })).sort((a, b) => b.share - a.share);
+
+  if(mauShares.length >= 2){
+    const leader = mauShares[0];
+    const runner = mauShares[1];
+    const gap = leader.share - runner.share;
+
+    insights.push({
+      text: `${C[leader.app].label} dominates with ${leader.share.toFixed(1)}% MAU share (${leader.mau.toFixed(0)}M users), leading ${C[runner.app].label} by ${gap.toFixed(1)}pp`,
+      type: 'share',
+      priority: 50
+    });
+
+    // Check if gap is narrowing
+    if(lastMonthIdx >= 2){
+      const prevGap = DATA.mau_share[leader.app][lastMonthIdx - 2] - DATA.mau_share[runner.app][lastMonthIdx - 2];
+      if(prevGap - gap > 2){
+        insights.push({
+          text: `${C[runner.app].label} is closing the gap: reduced ${C[leader.app].label}'s lead by ${(prevGap - gap).toFixed(1)}pp over the last 2 months`,
+          type: 'share',
+          priority: 45
+        });
+      }
+    }
+  }
+
+  // 6. Fastest Growing App (Monthly)
+  if(lastMonthIdx >= 3){
+    const growthRates = APPS.filter(app => VISIBLE_APPS[app]).map(app => {
+      const latest3Avg = (DATA.mau[app][lastMonthIdx] + DATA.mau[app][lastMonthIdx - 1] + DATA.mau[app][lastMonthIdx - 2]) / 3;
+      const prev3Avg = (DATA.mau[app][lastMonthIdx - 3] + DATA.mau[app][lastMonthIdx - 4] + DATA.mau[app][lastMonthIdx - 5]) / 3;
+      const growth = ((latest3Avg - prev3Avg) / prev3Avg * 100);
+
+      return { app, growth, latest3Avg };
+    }).sort((a, b) => b.growth - a.growth);
+
+    const fastest = growthRates[0];
+    if(fastest.growth > 5){
+      insights.push({
+        text: `${C[fastest.app].label} is the fastest-growing app with ${fastest.growth.toFixed(1)}% MAU growth over the last quarter (${fastest.latest3Avg.toFixed(0)}M users)`,
+        type: 'growth',
+        priority: 40
+      });
+    }
+  }
+
+  // 7. Geographic Concentration
+  if(DATA.top20 && DATA.top20.length > 0){
+    const totalDl = {};
+    APPS.forEach(app => { totalDl[app] = 0; });
+
+    DATA.top20.forEach(code => {
+      APPS.forEach(app => {
+        totalDl[app] += DATA.country_bar_dl[code][app] || 0;
+      });
+    });
+
+    APPS.forEach(app => {
+      if(!VISIBLE_APPS[app]) return;
+
+      const top3Total = DATA.top20.slice(0, 3).reduce((sum, code) => {
+        return sum + (DATA.country_bar_dl[code][app] || 0);
+      }, 0);
+
+      const concentration = (top3Total / totalDl[app] * 100);
+
+      if(concentration > 40){
+        const top3Names = DATA.top20.slice(0, 3).map(code => DATA.country_names[code]).join(', ');
+        insights.push({
+          text: `${C[app].label} has high geographic concentration: top 3 markets (${top3Names}) account for ${concentration.toFixed(0)}% of downloads`,
+          type: 'geo',
+          priority: 25
+        });
+      }
+    });
+  }
+
+  // 8. Platform Dominance
+  APPS.forEach(app => {
+    if(!VISIBLE_APPS[app]) return;
+
+    const latestIos = DATA.dl_ios[app][lastMonthIdx];
+    const latestAndroid = DATA.dl_android[app][lastMonthIdx];
+    const iosShare = latestIos / (latestIos + latestAndroid) * 100;
+
+    if(iosShare > 60){
+      insights.push({
+        text: `${C[app].label} is iOS-dominant: ${iosShare.toFixed(0)}% of downloads from iOS (${latestIos.toFixed(1)}M vs ${latestAndroid.toFixed(1)}M Android)`,
+        type: 'platform',
+        priority: 20
+      });
+    } else if(iosShare < 40){
+      insights.push({
+        text: `${C[app].label} is Android-dominant: ${(100-iosShare).toFixed(0)}% of downloads from Android (${latestAndroid.toFixed(1)}M vs ${latestIos.toFixed(1)}M iOS)`,
+        type: 'platform',
+        priority: 20
+      });
+    }
+  });
+
+  // 9. Emerging Market Leader
+  if(DATA.top20 && DATA.top20.length >= 5){
+    const emergingMarkets = ['IN', 'BR', 'ID', 'MX', 'PH']; // India, Brazil, Indonesia, Mexico, Philippines
+
+    APPS.forEach(app => {
+      if(!VISIBLE_APPS[app]) return;
+
+      let emergingTotal = 0;
+      let totalDl = 0;
+
+      DATA.top20.forEach(code => {
+        const dl = DATA.country_bar_dl[code][app] || 0;
+        totalDl += dl;
+        if(emergingMarkets.includes(code)){
+          emergingTotal += dl;
+        }
+      });
+
+      const emergingShare = (emergingTotal / totalDl * 100);
+      if(emergingShare > 50){
+        insights.push({
+          text: `${C[app].label} has strong emerging market presence: ${emergingShare.toFixed(0)}% of downloads from India, Brazil, Indonesia, Mexico & Philippines`,
+          type: 'geo',
+          priority: 22
+        });
+      }
+    });
+  }
+
+  // 10. Download-to-MAU Conversion
+  APPS.forEach(app => {
+    if(!VISIBLE_APPS[app]) return;
+
+    // Compare latest month downloads vs MAU
+    const monthlyDl = DATA.dl[app][lastMonthIdx];
+    const monthlyMau = DATA.mau[app][lastMonthIdx];
+
+    if(monthlyDl > 0 && monthlyMau > 0){
+      const ratio = monthlyMau / monthlyDl;
+
+      if(ratio > 20){
+        insights.push({
+          text: `${C[app].label} shows excellent retention: ${monthlyMau.toFixed(0)}M MAU vs ${monthlyDl.toFixed(1)}M monthly downloads (${ratio.toFixed(1)}x ratio indicates strong user stickiness)`,
+          type: 'growth',
+          priority: 35
+        });
+      } else if(ratio < 8){
+        insights.push({
+          text: `${C[app].label} faces retention challenges: ${monthlyMau.toFixed(0)}M MAU vs ${monthlyDl.toFixed(1)}M monthly downloads (${ratio.toFixed(1)}x ratio suggests room for improvement)`,
+          type: 'decline',
+          priority: 30
+        });
+      }
+    }
+  });
+
+  // Sort by priority and take top 10
+  insights.sort((a, b) => b.priority - a.priority);
+  const top10 = insights.slice(0, 10);
+
+  // Render
+  const grid = document.getElementById('insightsGrid');
+  grid.innerHTML = top10.map((insight, i) => `
+    <div class="insight-item">
+      <div class="insight-rank">${i + 1}</div>
+      <div class="insight-content">
+        <div class="insight-text">${insight.text}</div>
+        <div class="insight-meta">
+          <span class="insight-tag ${insight.type}">${insight.type.toUpperCase()}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 buildKPIs();
 buildTrend();
@@ -2339,6 +2664,7 @@ buildPlat();
 buildShare();
 buildCtry();
 buildCtryTable();
+generateInsights();
 </script>
 </body>
 </html>
