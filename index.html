@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AI App Mobile Intelligence</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 <style>
 :root{
   --bg:#0f1117;--card:#181b26;--card2:#1e2130;--border:#2a2e42;
@@ -1683,6 +1684,11 @@ function buildTrend(){
   }
 
   const labels = months.map(shortLabel);
+
+  // Check if last data point is incomplete (for weekly mode)
+  const lastWeekIncomplete = (GRANULARITY === 'weekly' && months.length > 0 && isWeekIncomplete(months[months.length - 1]));
+
+  // Build datasets with dashed line for incomplete week
   const datasets = APPS.filter(app => VISIBLE_APPS[app]).map(app => ({
     label: C[app].label,
     data: src[app],
@@ -1691,8 +1697,42 @@ function buildTrend(){
     fill: true,
     tension: .4,
     pointRadius: 2,
-    borderWidth: 2
+    borderWidth: 2,
+    segment: lastWeekIncomplete ? {
+      borderDash: ctx => {
+        // Use dashed line for the last segment only
+        return ctx.p1DataIndex === src[app].length - 1 ? [5, 5] : undefined;
+      }
+    } : undefined
   }));
+
+  // Build event annotations
+  const annotations = {};
+  Object.keys(PRODUCT_LAUNCHES).forEach(monthKey => {
+    const monthIndex = months.indexOf(monthKey);
+    if(monthIndex >= 0){
+      const event = PRODUCT_LAUNCHES[monthKey];
+      annotations['event_' + monthKey] = {
+        type: 'line',
+        xMin: monthIndex,
+        xMax: monthIndex,
+        borderColor: event.color,
+        borderWidth: 2,
+        borderDash: [3, 3],
+        label: {
+          display: true,
+          content: event.event,
+          position: 'start',
+          backgroundColor: event.color,
+          color: 'white',
+          font: { size: 9, weight: 'bold' },
+          padding: 4,
+          rotation: 0
+        }
+      };
+    }
+  });
+
   const ctx = document.getElementById('trendChart').getContext('2d');
   if(trendChart) trendChart.destroy();
   trendChart = new Chart(ctx,{
@@ -1701,11 +1741,17 @@ function buildTrend(){
     options:{
       responsive:true,
       interaction:{mode:'index',intersect:false},
-      plugins:{legend:{display:false},tooltip:{
-        callbacks:{
-          label: i => ' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'M'
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label: i => ' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'M'
+          }
+        },
+        annotation: {
+          annotations: annotations
         }
-      }},
+      },
       scales:{
         x:{grid:gridCfg,ticks:{maxTicksLimit:13,font:{size:11}}},
         y:{
@@ -1760,6 +1806,36 @@ function buildPlat(){
   const androidColor = col === '#10a37f' ? '#14b8a6' :
                        col === '#4285F4' ? '#60a5fa' :
                        '#fb923c'; // chatgpt绿->青绿, gemini蓝->天蓝, claude橙->亮橙
+
+  // Build event annotations
+  const annotations = {};
+  Object.keys(PRODUCT_LAUNCHES).forEach(monthKey => {
+    const monthIndex = months.indexOf(monthKey);
+    if(monthIndex >= 0){
+      const event = PRODUCT_LAUNCHES[monthKey];
+      // Only show annotation if it's relevant to current app
+      if(event.app === platApp){
+        annotations['event_' + monthKey] = {
+          type: 'line',
+          xMin: monthIndex,
+          xMax: monthIndex,
+          borderColor: event.color,
+          borderWidth: 1.5,
+          borderDash: [3, 3],
+          label: {
+            display: true,
+            content: event.event,
+            position: 'start',
+            backgroundColor: event.color,
+            color: 'white',
+            font: { size: 8, weight: 'bold' },
+            padding: 3
+          }
+        };
+      }
+    }
+  });
+
   const ctx = document.getElementById('platChart').getContext('2d');
   if(platChart) platChart.destroy();
   platChart = new Chart(ctx,{
@@ -1774,8 +1850,13 @@ function buildPlat(){
     options:{
       responsive:true,
       interaction:{mode:'index',intersect:false},
-      plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
-        tooltip:{callbacks:{label:i=>' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'M'}}},
+      plugins:{
+        legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
+        tooltip:{callbacks:{label:i=>' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'M'}},
+        annotation: {
+          annotations: annotations
+        }
+      },
       scales:{
         x:{stacked:true,grid:gridCfg,ticks:{maxTicksLimit:13,font:{size:10}}},
         y:{stacked:true,grid:gridCfg,ticks:{callback:v=>v+'M',font:{size:11}}}
@@ -1803,6 +1884,33 @@ function buildShare(){
   const months = shareMetric==='dl' ? DATA.dl_months : (shareMetric==='mau' ? DATA.mau_months : DATA.wau_months);
   const src    = shareMetric==='dl' ? DATA.dl_share : (shareMetric==='mau' ? DATA.mau_share : DATA.wau_share);
   const labels = months.map(shortLabel);
+
+  // Build event annotations
+  const annotations = {};
+  Object.keys(PRODUCT_LAUNCHES).forEach(monthKey => {
+    const monthIndex = months.indexOf(monthKey);
+    if(monthIndex >= 0){
+      const event = PRODUCT_LAUNCHES[monthKey];
+      annotations['event_' + monthKey] = {
+        type: 'line',
+        xMin: monthIndex,
+        xMax: monthIndex,
+        borderColor: event.color,
+        borderWidth: 1.5,
+        borderDash: [3, 3],
+        label: {
+          display: true,
+          content: event.event,
+          position: 'start',
+          backgroundColor: event.color,
+          color: 'white',
+          font: { size: 8, weight: 'bold' },
+          padding: 3
+        }
+      };
+    }
+  });
+
   const ctx = document.getElementById('shareChart').getContext('2d');
   if(shareChart) shareChart.destroy();
   shareChart = new Chart(ctx,{
@@ -1823,8 +1931,13 @@ function buildShare(){
     options:{
       responsive:true,
       interaction:{mode:'index',intersect:false},
-      plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
-        tooltip:{callbacks:{label:i=>' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'%'}}},
+      plugins:{
+        legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
+        tooltip:{callbacks:{label:i=>' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'%'}},
+        annotation: {
+          annotations: annotations
+        }
+      },
       scales:{
         x:{grid:gridCfg,ticks:{maxTicksLimit:13,font:{size:10}}},
         y:{grid:gridCfg,min:0,max:100,ticks:{callback:v=>v+'%',font:{size:11}}}
@@ -2367,11 +2480,20 @@ function downloadTemplate(type){
 // ── Generate Insights ─────────────────────────────────────────────────────────
 // Product launch timeline (for context)
 const PRODUCT_LAUNCHES = {
-  '2024-02': { app: 'gemini', event: 'Gemini initial launch' },
-  '2024-05': { app: 'chatgpt', event: 'GPT-4o release' },
-  '2025-09': { app: 'gemini', event: 'Major Gemini update' },
-  '2026-02': { app: 'claude', event: 'Claude model update' }
+  '2024-02': { app: 'gemini', event: 'Gemini Launch', color: '#4285F4' },
+  '2024-05': { app: 'chatgpt', event: 'GPT-4o', color: '#10a37f' },
+  '2025-09': { app: 'gemini', event: 'Gemini Update', color: '#4285F4' },
+  '2026-02': { app: 'claude', event: 'Claude Update', color: '#e8834a' }
 };
+
+// Check if a week is incomplete (not ended yet)
+function isWeekIncomplete(weekString){
+  // weekString format: "2026-03-16" (represents week ending on that date)
+  const weekEndDate = new Date(weekString + 'T00:00:00');
+  const today = new Date();
+  // If week end date is in the future or is today, it's incomplete
+  return weekEndDate >= today;
+}
 
 function generateInsights(){
   const insights = [];
