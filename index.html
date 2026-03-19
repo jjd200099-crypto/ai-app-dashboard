@@ -2961,6 +2961,19 @@ buildCtry();
 buildCtryTable();
 buildTimeline();
 generateInsights();
+
+// Force test - add a simple insight directly
+setTimeout(function(){
+  console.log('=== FORCE TEST ===');
+  const testGrid = document.getElementById('insightsGrid');
+  if(testGrid){
+    console.log('Found insightsGrid element');
+    testGrid.innerHTML = '<div style="padding:20px;background:lime;color:black;font-weight:bold">✅ SUCCESS! JavaScript CAN write to this element. If you see this green box, generateInsights() needs debugging.</div>';
+    console.log('Wrote test content to insightsGrid');
+  } else {
+    console.error('insightsGrid NOT FOUND in setTimeout');
+  }
+}, 1000);
 </script>
 </body>
 </html>
