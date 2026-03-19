@@ -2456,31 +2456,46 @@ function generateInsights(){
 
   if(visibleApps.length === 0) return;
 
-  // Use weekly data for recent trends (last 4 weeks)
+  // Use weekly data for recent trends (excluding incomplete weeks)
   const useWeekly = WEEKLY_DATA && WEEKLY_DATA.dl_weeks && WEEKLY_DATA.dl_weeks.length > 0;
 
   if(useWeekly){
-    const weeks = WEEKLY_DATA.dl_weeks;
-    const dl = WEEKLY_DATA.dl;
-    const wau = WEEKLY_DATA.wau;
-    const dlIos = WEEKLY_DATA.dl_ios;
-    const dlAndroid = WEEKLY_DATA.dl_android;
+    let weeks = WEEKLY_DATA.dl_weeks;
+    let dl = WEEKLY_DATA.dl;
+    let wau = WEEKLY_DATA.wau;
+    let dlIos = WEEKLY_DATA.dl_ios;
+    let dlAndroid = WEEKLY_DATA.dl_android;
 
-    // Recent 4 weeks (for trend analysis)
+    // Filter out incomplete week
+    if(weeks.length > 0 && isWeekIncomplete(weeks[weeks.length - 1])){
+      weeks = weeks.slice(0, -1);
+      const filteredDl = {}, filteredWau = {}, filteredIos = {}, filteredAndroid = {};
+      APPS.forEach(app => {
+        filteredDl[app] = dl[app].slice(0, -1);
+        filteredWau[app] = wau[app] ? wau[app].slice(0, -1) : [];
+        filteredIos[app] = dlIos[app].slice(0, -1);
+        filteredAndroid[app] = dlAndroid[app].slice(0, -1);
+      });
+      dl = filteredDl;
+      wau = filteredWau;
+      dlIos = filteredIos;
+      dlAndroid = filteredAndroid;
+    }
+
     const recentWeeks = 4;
     const lastIdx = weeks.length - 1;
     const startIdx = Math.max(0, lastIdx - recentWeeks + 1);
     const latestWeek = weeks[lastIdx];
 
-    // 1. COMPARATIVE Weekly Download Trend (横向对比)
+    // 1. COMPARATIVE Weekly Download Trend with context
     const weeklyChanges = visibleApps.map(app => {
       const latest = dl[app][lastIdx];
       const previous = dl[app][lastIdx - 1];
       const change = previous > 0 ? ((latest - previous) / previous * 100) : 0;
-      return { app, latest, previous, change };
+      const absChange = latest - previous;
+      return { app, latest, previous, change, absChange };
     });
 
-    // Check if all apps moved in same direction
     const allGrowing = weeklyChanges.every(a => a.change > 0);
     const allDeclining = weeklyChanges.every(a => a.change < 0);
 
@@ -2488,61 +2503,63 @@ function generateInsights(){
       weeklyChanges.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
       const strongest = weeklyChanges[0];
       const weakest = weeklyChanges[weeklyChanges.length - 1];
+      const avgChange = weeklyChanges.reduce((sum, a) => sum + a.change, 0) / weeklyChanges.length;
 
       insights.push({
-        text: `All ${visibleApps.length} apps ${allGrowing ? 'grew' : 'declined'} this week, with ${C[strongest.app].label} ${allGrowing ? 'leading gains' : 'hit hardest'} (${strongest.change > 0 ? '+' : ''}${strongest.change.toFixed(1)}%) vs ${C[weakest.app].label} (${weakest.change > 0 ? '+' : ''}${weakest.change.toFixed(1)}%)`,
+        text: `Market-wide ${allGrowing ? 'expansion' : 'contraction'}: All ${visibleApps.length} apps ${allGrowing ? 'grew' : 'declined'} this week (avg ${avgChange > 0 ? '+' : ''}${avgChange.toFixed(1)}%). ${C[strongest.app].label} ${allGrowing ? 'led' : 'suffered most'} at ${strongest.change > 0 ? '+' : ''}${strongest.change.toFixed(1)}% (${strongest.latest.toFixed(1)}M downloads), while ${C[weakest.app].label} ${allGrowing ? 'lagged' : 'held steady'} at ${weakest.change > 0 ? '+' : ''}${weakest.change.toFixed(1)}%. This ${allGrowing ? 'suggests increased overall AI adoption' : 'may indicate seasonal patterns or market saturation'}.`,
         type: allGrowing ? 'growth' : 'decline',
-        priority: 60
+        priority: 65
       });
     } else {
-      // Mixed performance
       const growing = weeklyChanges.filter(a => a.change > 0).sort((a, b) => b.change - a.change);
       const declining = weeklyChanges.filter(a => a.change < 0).sort((a, b) => a.change - b.change);
 
       if(growing.length > 0 && declining.length > 0){
+        const winner = growing[0];
+        const loser = declining[0];
         insights.push({
-          text: `Market divergence: ${C[growing[0].app].label} surged ${growing[0].change.toFixed(1)}% while ${C[declining[0].app].label} fell ${Math.abs(declining[0].change).toFixed(1)}% this week`,
+          text: `Competitive divergence: ${C[winner.app].label} gaining momentum (+${winner.change.toFixed(1)}%, reaching ${winner.latest.toFixed(1)}M downloads) while ${C[loser.app].label} losing ground (${loser.change.toFixed(1)}%, down to ${loser.latest.toFixed(1)}M). This ${winner.absChange.toFixed(1)}M vs ${Math.abs(loser.absChange).toFixed(1)}M absolute gap suggests ${C[winner.app].label} is capturing market share, possibly due to recent product updates or marketing campaigns.`,
           type: 'share',
-          priority: 55
+          priority: 60
         });
       }
     }
 
-    // 2. 4-Week Comparative Trend
+    // 2. 4-Week Momentum Analysis with strategic implications
     const trendChanges = visibleApps.map(app => {
       const recentDls = dl[app].slice(startIdx);
       if(recentDls.length >= 4){
         const avgFirst2 = (recentDls[0] + recentDls[1]) / 2;
         const avgLast2 = (recentDls[2] + recentDls[3]) / 2;
         const trendChange = avgFirst2 > 0 ? ((avgLast2 - avgFirst2) / avgFirst2 * 100) : 0;
-        return { app, trendChange, avgLast2 };
+        const latest = recentDls[recentDls.length - 1];
+        return { app, trendChange, avgLast2, latest };
       }
-      return { app, trendChange: 0, avgLast2: 0 };
+      return { app, trendChange: 0, avgLast2: 0, latest: 0 };
     }).filter(a => a.avgLast2 > 0);
 
     if(trendChanges.length >= 2){
       trendChanges.sort((a, b) => b.trendChange - a.trendChange);
       const fastest = trendChanges[0];
       const slowest = trendChanges[trendChanges.length - 1];
+      const momentumGap = fastest.trendChange - slowest.trendChange;
 
-      if(Math.abs(fastest.trendChange - slowest.trendChange) > 15){
+      if(Math.abs(momentumGap) > 15){
         insights.push({
-          text: `4-week momentum gap: ${C[fastest.app].label} accelerating ${fastest.trendChange > 0 ? '+' : ''}${fastest.trendChange.toFixed(1)}% vs ${C[slowest.app].label} ${slowest.trendChange > 0 ? '+' : ''}${slowest.trendChange.toFixed(1)}%`,
-          type: 'growth',
-          priority: 48
+          text: `4-week momentum divergence: ${C[fastest.app].label} shows ${fastest.trendChange > 0 ? 'strong' : 'negative'} momentum (${fastest.trendChange > 0 ? '+' : ''}${fastest.trendChange.toFixed(1)}% trend, latest ${fastest.latest.toFixed(1)}M downloads) vs ${C[slowest.app].label} (${slowest.trendChange > 0 ? '+' : ''}${slowest.trendChange.toFixed(1)}%, latest ${slowest.latest.toFixed(1)}M). This ${momentumGap.toFixed(1)}pp momentum gap indicates ${C[fastest.app].label} is in an acceleration phase, likely benefiting from product improvements or viral growth, while ${C[slowest.app].label} faces ${slowest.trendChange < 0 ? 'declining user interest' : 'slower growth'}.`,
+          type: fastest.trendChange > 0 ? 'growth' : 'decline',
+          priority: 55
         });
       }
     }
 
-    // 3. Comparative WAU Retention Analysis
+    // 3. User Retention & Engagement Quality
     if(wau && wau.chatgpt && wau.chatgpt.length > 0){
-      const wauWeeks = WEEKLY_DATA.wau_weeks;
-      const wauLastIdx = wauWeeks.length - 1;
-
       const retentionMetrics = visibleApps.map(app => {
-        if(wau[app][wauLastIdx] > 0 && dl[app][lastIdx] > 0){
-          const ratio = wau[app][wauLastIdx] / dl[app][lastIdx];
-          return { app, ratio, wau: wau[app][wauLastIdx], dl: dl[app][lastIdx] };
+        if(wau[app] && wau[app][lastIdx] > 0 && dl[app][lastIdx] > 0){
+          const ratio = wau[app][lastIdx] / dl[app][lastIdx];
+          const weeklyEngagement = wau[app][lastIdx];
+          return { app, ratio, wau: weeklyEngagement, dl: dl[app][lastIdx] };
         }
         return null;
       }).filter(Boolean);
@@ -2551,33 +2568,39 @@ function generateInsights(){
         retentionMetrics.sort((a, b) => b.ratio - a.ratio);
         const best = retentionMetrics[0];
         const worst = retentionMetrics[retentionMetrics.length - 1];
+        const retentionGap = best.ratio / worst.ratio;
 
         insights.push({
-          text: `Retention gap: ${C[best.app].label} leads with ${best.ratio.toFixed(1)}x WAU/Downloads ratio (${best.wau.toFixed(0)}M / ${best.dl.toFixed(1)}M) vs ${C[worst.app].label} at ${worst.ratio.toFixed(1)}x`,
+          text: `User stickiness analysis: ${C[best.app].label} demonstrates superior retention with ${best.ratio.toFixed(1)}x WAU/Downloads ratio (${best.wau.toFixed(0)}M active users from ${best.dl.toFixed(1)}M weekly downloads), compared to ${C[worst.app].label} at ${worst.ratio.toFixed(1)}x (${worst.wau.toFixed(0)}M/${worst.dl.toFixed(1)}M). This ${retentionGap.toFixed(1)}x retention advantage suggests ${C[best.app].label} has built stronger user habits and product-market fit. ${C[worst.app].label} may be attracting trial users who don't convert to regular usage, indicating potential product experience or onboarding issues.`,
           type: 'growth',
-          priority: 42
+          priority: 50
         });
       }
     }
 
-    // 4. Comparative Platform Mix
+    // 4. Platform Strategy & Market Positioning
     const platformMix = visibleApps.map(app => {
       const ios = dlIos[app][lastIdx];
       const android = dlAndroid[app][lastIdx];
-      const iosShare = (ios / (ios + android) * 100);
-      return { app, iosShare, ios, android };
+      const total = ios + android;
+      const iosShare = (ios / total * 100);
+      return { app, iosShare, ios, android, total };
     });
 
     if(platformMix.length >= 2){
       platformMix.sort((a, b) => b.iosShare - a.iosShare);
       const mostIos = platformMix[0];
       const mostAndroid = platformMix[platformMix.length - 1];
+      const platformGap = Math.abs(mostIos.iosShare - mostAndroid.iosShare);
 
-      if(Math.abs(mostIos.iosShare - mostAndroid.iosShare) > 15){
+      if(platformGap > 15){
+        const iosImplication = mostIos.iosShare > 55 ? 'premium market focus, higher ARPU potential' : 'balanced approach';
+        const androidImplication = (100 - mostAndroid.iosShare) > 55 ? 'mass market penetration, emerging markets strength' : 'balanced strategy';
+
         insights.push({
-          text: `Platform strategy divergence: ${C[mostIos.app].label} iOS-focused (${mostIos.iosShare.toFixed(0)}% iOS) vs ${C[mostAndroid.app].label} Android-focused (${(100-mostAndroid.iosShare).toFixed(0)}% Android)`,
+          text: `Platform positioning reveals strategic differences: ${C[mostIos.app].label} skews heavily iOS (${mostIos.iosShare.toFixed(0)}% = ${mostIos.ios.toFixed(1)}M downloads), indicating ${iosImplication}. In contrast, ${C[mostAndroid.app].label} is Android-dominant (${(100-mostAndroid.iosShare).toFixed(0)}% = ${mostAndroid.android.toFixed(1)}M downloads), suggesting ${androidImplication}. This ${platformGap.toFixed(0)}pp platform mix difference reflects distinct go-to-market strategies and target demographics.`,
           type: 'platform',
-          priority: 38
+          priority: 45
         });
       }
     }
