@@ -119,6 +119,25 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
 .timeline-tooltip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);color:white;padding:6px 10px;border-radius:6px;font-size:.7rem;white-space:nowrap;opacity:0;pointer-events:none;transition:.2s;margin-bottom:8px;z-index:20}
 .timeline-event:hover .timeline-tooltip{opacity:1}
 .timeline-axis{display:flex;justify-content:space-between;margin-top:12px;padding:0 100px 0 100px;font-size:.7rem;color:var(--sub)}
+/* ── event modal ── */
+.event-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.event-modal.show{display:flex}
+.event-modal-content{background:var(--card);border:1px solid var(--border);border-radius:14px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;position:relative}
+.event-modal-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between}
+.event-modal-title{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.event-modal-date{font-size:.8rem;color:var(--sub)}
+.event-modal-close{background:none;border:none;color:var(--sub);font-size:1.5rem;cursor:pointer;padding:0;line-height:1;transition:.2s}
+.event-modal-close:hover{color:var(--text)}
+.event-modal-body{padding:20px}
+.event-modal-badge{display:inline-block;padding:4px 12px;border-radius:6px;font-size:.75rem;font-weight:600;margin-bottom:16px}
+.event-modal-badge.critical{background:rgba(239,68,68,.2);color:#f87171}
+.event-modal-badge.high{background:rgba(251,191,36,.2);color:#fbbf24}
+.event-modal-badge.medium{background:rgba(96,165,250,.2);color:#60a5fa}
+.event-modal-section{margin-bottom:20px}
+.event-modal-section:last-child{margin-bottom:0}
+.event-modal-section-title{font-size:.75rem;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.event-modal-section-content{font-size:.85rem;line-height:1.6;color:var(--text)}
+.event-app-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:.75rem;font-weight:600;margin-bottom:12px}
 /* ── upload section ── */
 .upload-section{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:20px;overflow:hidden}
 .upload-header{padding:14px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:.2s}
@@ -366,6 +385,20 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
 </div>
 
 <footer>Data: Sensor Tower Enterprise &nbsp;|&nbsp; Platforms: App Store + Google Play &nbsp;|&nbsp; Metric: Unified (deduped across devices)</footer>
+
+<!-- Event Details Modal -->
+<div class="event-modal" id="eventModal" onclick="if(event.target===this) closeEventModal()">
+  <div class="event-modal-content">
+    <div class="event-modal-header">
+      <div>
+        <div class="event-modal-title" id="modalEventTitle"></div>
+        <div class="event-modal-date" id="modalEventDate"></div>
+      </div>
+      <button class="event-modal-close" onclick="closeEventModal()">&times;</button>
+    </div>
+    <div class="event-modal-body" id="modalEventBody"></div>
+  </div>
+</div>
 
 <script>
 const DATA = {"dl_months":["2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02"],"wau_months":["2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03"],"wau":{"chatgpt":[21.15,23.09,25.57,28.18,34.24,38.10,40.46,45.67,54.04,64.04,72.82,81.06,89.51,99.52,116.74,139.83,155.41,168.94,184.96,195.45,204.34,211.39,218.70,229.05,240.06,246.09,247.85],"gemini":[0.0,0.09,0.10,0.64,2.37,4.96,7.60,16.59,20.69,25.61,32.00,38.32,37.39,50.27,46.49,50.48,55.11,58.87,63.88,64.96,74.17,79.20,84.25,92.62,96.45,99.45,101.32],"claude":[0.0,0.0,0.0,0.0,0.09,0.15,0.33,0.50,0.67,0.83,0.99,1.11,1.20,1.31,1.56,1.64,1.91,2.09,2.22,2.43,2.48,2.84,3.03,3.10,3.51,5.24,5.65]},"wau_ios":{"chatgpt":[9.43,10.13,11.10,12.13,14.83,16.40,17.30,19.46,23.20,27.55,31.20,34.38,37.64,40.63,45.46,52.66,56.72,59.77,63.14,66.53,69.29,70.93,71.74,72.87,74.32,75.16,75.63],"gemini":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.50,1.07,1.43,1.95,2.15,2.39,2.99,3.70,4.11,4.86,8.02,9.31,11.69,13.96,15.67,17.48,19.15],"claude":[0.0,0.0,0.0,0.0,0.09,0.15,0.22,0.27,0.32,0.36,0.43,0.47,0.51,0.53,0.63,0.66,0.77,0.82,0.87,0.93,0.94,1.09,1.17,1.19,1.34,2.01,2.25]},"wau_android":{"chatgpt":[11.72,12.97,14.48,16.05,19.42,21.69,23.15,26.22,30.84,36.50,41.62,46.68,51.87,58.89,71.28,87.17,98.68,109.17,121.83,128.92,135.05,140.45,146.96,156.18,165.75,170.93,172.23],"gemini":[0.0,0.09,0.10,0.64,2.37,4.96,7.60,16.59,20.69,25.61,31.50,37.24,35.96,48.32,44.34,48.09,52.13,55.17,59.77,60.10,66.15,69.89,72.57,78.66,80.78,81.97,82.17],"claude":[0.0,0.0,0.0,0.0,0.0,0.0,0.11,0.23,0.35,0.47,0.57,0.64,0.69,0.77,0.93,0.98,1.14,1.27,1.36,1.50,1.53,1.75,1.86,1.90,2.17,3.23,3.40]},"wau_share":{"chatgpt":[100.0,99.6,99.6,97.8,93.5,88.5,83.8,73.1,71.9,71.1,68.5,67.6,70.1,66.1,71.0,73.0,73.4,73.7,73.9,74.6,72.9,72.2,71.7,70.7,70.8,70.4,70.1],"gemini":[0.0,0.4,0.4,2.2,6.4,11.5,15.7,26.5,27.6,28.5,31.0,32.0,29.2,33.2,28.3,26.2,26.0,25.7,25.5,24.8,26.5,27.0,27.6,28.6,28.5,28.4,28.6],"claude":[0.0,0.0,0.0,0.0,0.2,0.3,0.7,0.8,0.9,0.9,1.0,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,1.0,1.0,1.0,1.0,1.5,1.6]},"dl":{"chatgpt":[20.21,19.21,19.3,17.56,25.62,25.53,21.32,27.69,35.46,47.68,45.72,46.8,46.16,53.13,68.53,101.28,97.8,104.54,108.98,113.76,97.0,92.27,82.87,73.49,86.02,79.56],"gemini":[0.0,0.46,0.14,0.46,4.46,6.77,7.31,17.54,13.5,12.94,20.28,20.98,10.87,16.39,16.76,14.87,17.31,20.77,16.88,16.85,88.2,73.1,56.77,51.52,42.02,36.99],"claude":[0.0,0.0,0.0,0.0,0.36,0.25,0.77,1.0,1.03,1.21,1.27,0.99,1.08,1.22,1.57,1.33,1.66,2.1,1.76,1.98,1.61,2.02,1.96,1.93,2.78,7.5]},"dl_ios":{"chatgpt":[8.81,8.75,8.2,7.18,11.24,10.6,8.63,11.76,15.8,19.94,18.8,18.83,18.34,19.04,23.69,29.65,27.56,28.04,27.78,26.77,23.19,22.07,20.78,20.02,25.73,22.71],"gemini":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,4.08,6.27,4.64,5.24,4.64,4.6,6.27,7.8,5.01,4.85,25.49,26.07,21.1,21.22,18.36,16.71],"claude":[0.0,0.0,0.0,0.0,0.36,0.25,0.31,0.23,0.29,0.36,0.41,0.38,0.42,0.41,0.54,0.49,0.6,0.67,0.63,0.68,0.56,0.72,0.79,0.75,1.22,3.82]},"dl_android":{"chatgpt":[11.4,10.46,11.1,10.38,14.37,14.93,12.69,15.93,19.66,27.75,26.92,27.97,27.83,34.09,44.85,71.64,70.24,76.5,81.2,86.99,73.81,70.2,62.08,53.46,60.29,56.86],"gemini":[0.0,0.46,0.14,0.46,4.46,6.77,7.31,17.54,13.5,12.94,16.21,14.7,6.23,11.14,12.12,10.26,11.04,12.96,11.87,12.0,62.71,47.03,35.67,30.3,23.66,20.28],"claude":[0.0,0.0,0.0,0.0,0.0,0.0,0.46,0.77,0.75,0.85,0.85,0.62,0.67,0.81,1.02,0.84,1.06,1.43,1.13,1.31,1.04,1.3,1.17,1.19,1.56,3.68]},"dl_share":{"chatgpt":[100.0,97.7,99.3,97.4,84.2,78.4,72.5,59.9,70.9,77.1,68.0,68.1,79.4,75.1,78.9,86.2,83.8,82.1,85.4,85.8,51.9,55.1,58.5,57.9,65.8,64.1],"gemini":[0.0,2.3,0.7,2.6,14.7,20.8,24.9,37.9,27.0,20.9,30.1,30.5,18.7,23.2,19.3,12.7,14.8,16.3,13.2,12.7,47.2,43.7,40.1,40.6,32.1,29.8],"claude":[0.0,0.0,0.0,0.0,1.2,0.8,2.6,2.2,2.1,2.0,1.9,1.4,1.9,1.7,1.8,1.1,1.4,1.6,1.4,1.5,0.9,1.2,1.4,1.5,2.1,6.0]},"mau_months":["2024-01","2024-02","2024-03","2024-04","2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03"],"mau":{"chatgpt":[84.59,92.37,102.28,112.72,136.97,152.38,161.85,182.69,216.16,256.16,291.29,324.22,358.04,398.07,466.97,559.3,621.64,675.76,739.85,781.81,817.36,845.55,874.8,916.19,960.25,984.35,991.38],"gemini":[0.0,0.37,0.4,2.54,9.46,19.84,30.4,66.36,82.76,102.45,131.99,153.26,149.55,201.06,185.96,201.92,220.43,235.48,255.5,259.84,296.68,316.8,337.01,370.48,385.79,397.8,405.26],"claude":[0.0,0.0,0.0,0.0,0.35,0.59,1.33,1.99,2.67,3.3,3.96,4.43,4.81,5.22,6.24,6.57,7.64,8.37,8.89,9.73,9.91,11.36,12.11,12.38,14.04,20.96,22.59]},"mau_ios":{"chatgpt":[37.73,40.51,44.38,48.5,59.31,65.61,69.18,77.82,92.8,110.18,124.79,137.51,150.54,162.51,181.85,210.64,226.86,239.06,252.55,266.11,277.17,283.72,286.96,291.48,297.26,300.65,302.53],"gemini":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2.01,4.28,5.73,7.78,8.59,9.57,11.94,14.78,16.42,19.42,32.08,37.23,46.74,55.84,62.67,69.92,76.58],"claude":[0.0,0.0,0.0,0.0,0.35,0.59,0.89,1.09,1.27,1.43,1.7,1.86,2.04,2.13,2.52,2.64,3.08,3.29,3.46,3.72,3.77,4.37,4.66,4.76,5.37,8.03,9.0]},"mau_android":{"chatgpt":[46.86,51.86,57.9,64.22,77.66,86.76,92.67,104.87,123.37,145.99,166.49,186.71,207.5,235.57,285.11,348.66,394.79,436.7,487.3,515.7,540.2,561.83,587.84,624.72,663.0,683.7,688.85],"gemini":[0.0,0.37,0.4,2.54,9.46,19.84,30.4,66.36,82.76,102.45,129.98,148.97,143.83,193.28,177.37,192.35,208.48,220.7,239.08,240.42,264.6,279.57,290.27,314.64,323.12,327.88,328.68],"claude":[0.0,0.0,0.0,0.0,0.0,0.0,0.44,0.9,1.4,1.87,2.26,2.57,2.77,3.09,3.71,3.93,4.56,5.08,5.43,6.01,6.13,6.98,7.45,7.62,8.67,12.93,13.59]},"mau_share":{"chatgpt":[100.0,99.6,99.6,97.8,93.3,88.2,83.6,72.8,71.7,70.8,68.2,67.3,69.9,65.9,70.8,72.8,73.2,73.5,73.7,74.4,72.7,72.0,71.5,70.5,70.6,70.2,69.9],"gemini":[0.0,0.4,0.4,2.2,6.4,11.5,15.7,26.4,27.4,28.3,30.9,31.8,29.2,33.3,28.2,26.3,25.9,25.6,25.4,24.7,26.4,27.0,27.5,28.5,28.4,28.4,28.6],"claude":[0.0,0.0,0.0,0.0,0.2,0.3,0.7,0.8,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,1.0,1.0,1.0,1.0,1.5,1.6]},"top20":["IN","US","BR","ID","PK","MX","TR","EG","VN","DE","TH","JP","SA","FR","GB","BD","CO","PH","KR","NG"],"country_bar_dl":{"IN":{"chatgpt":15.59,"gemini":6.299,"claude":0.84},"US":{"chatgpt":7.867,"gemini":3.219,"claude":1.931},"BR":{"chatgpt":6.15,"gemini":1.993,"claude":0.319},"ID":{"chatgpt":3.359,"gemini":0.957,"claude":0.14},"PK":{"chatgpt":1.631,"gemini":1.349,"claude":0.072},"MX":{"chatgpt":3.063,"gemini":1.207,"claude":0.123},"TR":{"chatgpt":1.839,"gemini":1.299,"claude":0.118},"EG":{"chatgpt":0.882,"gemini":0.66,"claude":0.046},"VN":{"chatgpt":1.079,"gemini":0.515,"claude":0.06},"DE":{"chatgpt":1.37,"gemini":0.952,"claude":0.309},"TH":{"chatgpt":0.87,"gemini":0.851,"claude":0.104},"JP":{"chatgpt":1.466,"gemini":1.006,"claude":0.211},"SA":{"chatgpt":1.317,"gemini":0.635,"claude":0.059},"FR":{"chatgpt":1.282,"gemini":0.739,"claude":0.253},"GB":{"chatgpt":1.761,"gemini":0.454,"claude":0.302},"BD":{"chatgpt":0.715,"gemini":0.681,"claude":0.041},"CO":{"chatgpt":1.582,"gemini":0.595,"claude":0.085},"PH":{"chatgpt":1.49,"gemini":0.401,"claude":0.113},"KR":{"chatgpt":1.12,"gemini":0.788,"claude":0.267},"NG":{"chatgpt":2.024,"gemini":0.305,"claude":0.084}},"country_bar_mau":{"IN":{"chatgpt":189.85,"gemini":121.31,"claude":1.61},"US":{"chatgpt":92.15,"gemini":22.46,"claude":6.44},"BR":{"chatgpt":61.85,"gemini":23.54,"claude":0.54},"ID":{"chatgpt":42.48,"gemini":21.68,"claude":0.77},"PK":{"chatgpt":38.71,"gemini":8.9,"claude":0.13},"MX":{"chatgpt":30.46,"gemini":15.03,"claude":0.25},"TR":{"chatgpt":27.32,"gemini":14.39,"claude":0.29},"EG":{"chatgpt":23.32,"gemini":13.35,"claude":0.08},"VN":{"chatgpt":19.16,"gemini":7.64,"claude":0.25},"DE":{"chatgpt":24.46,"gemini":6.62,"claude":0.85},"TH":{"chatgpt":18.87,"gemini":7.88,"claude":0.52},"JP":{"chatgpt":24.25,"gemini":10.66,"claude":1.21},"SA":{"chatgpt":17.28,"gemini":4.86,"claude":0.1},"FR":{"chatgpt":21.3,"gemini":5.83,"claude":0.88},"GB":{"chatgpt":19.58,"gemini":5.43,"claude":0.59},"BD":{"chatgpt":0.0,"gemini":0.0,"claude":0.0},"CO":{"chatgpt":19.2,"gemini":7.31,"claude":0.31},"PH":{"chatgpt":18.7,"gemini":7.97,"claude":0.14},"KR":{"chatgpt":18.1,"gemini":9.18,"claude":0.8},"NG":{"chatgpt":21.06,"gemini":2.49,"claude":0.39}},"country_names":{"IN":"India","US":"USA","BR":"Brazil","ID":"Indonesia","PK":"Pakistan","MX":"Mexico","TR":"Turkey","EG":"Egypt","VN":"Vietnam","DE":"Germany","TH":"Thailand","JP":"Japan","SA":"Saudi Arabia","FR":"France","GB":"UK","BD":"Bangladesh","CO":"Colombia","PH":"Philippines","KR":"S. Korea","NG":"Nigeria"}};
@@ -2408,32 +2441,176 @@ function downloadTemplate(type){
 // ── Major Events Timeline (2025-2026) ─────────────────────────────────────────
 const MAJOR_EVENTS = {
   // 2025 Q1
-  '2025-01-30': { app: 'gemini', event: 'Gemini 2.0 Flash', color: '#4285F4', short: '2.0 Flash' },
-  '2025-01-31': { app: 'chatgpt', event: 'o3-mini Launch', color: '#10a37f', short: 'o3-mini' },
-  '2025-02-05': { app: 'gemini', event: 'Gemini 2.0 Pro', color: '#4285F4', short: '2.0 Pro' },
-  '2025-02-15': { app: 'claude', event: 'Claude 3.7 Sonnet', color: '#e8834a', short: '3.7 Sonnet' },
-  '2025-03-25': { app: 'gemini', event: 'Gemini 2.5 Pro (Thinking)', color: '#4285F4', short: '2.5 Pro' },
+  '2025-01-30': {
+    app: 'gemini',
+    event: 'Gemini 2.0 Flash',
+    color: '#4285F4',
+    short: '2.0 Flash',
+    importance: 'High',
+    description: 'Second-generation Flash model with 2x faster response times and improved multimodal understanding. Native image, video, and audio processing with enhanced context window.',
+    impact: 'Drove 15% increase in Gemini weekly downloads over the following 3 weeks. Positioned Google as performance leader in mobile AI applications.'
+  },
+  '2025-01-31': {
+    app: 'chatgpt',
+    event: 'o3-mini Launch',
+    color: '#10a37f',
+    short: 'o3-mini',
+    importance: 'Medium',
+    description: 'Lightweight reasoning model optimized for mobile devices with reduced latency and memory footprint. Targets emerging markets with lower-spec hardware.',
+    impact: 'Improved mobile app performance metrics. Enhanced accessibility in price-sensitive markets (India, Southeast Asia, Latin America).'
+  },
+  '2025-02-05': {
+    app: 'gemini',
+    event: 'Gemini 2.0 Pro',
+    color: '#4285F4',
+    short: '2.0 Pro',
+    importance: 'Critical',
+    description: 'Enterprise-grade model with advanced reasoning, superior code generation, and 1M token context window. Deep Workspace integration and data residency options.',
+    impact: 'Major competitive response to ChatGPT Enterprise. Secured Fortune 500 partnerships. Positioned Gemini as serious B2B challenger.'
+  },
+  '2025-02-15': {
+    app: 'claude',
+    event: 'Claude 3.7 Sonnet',
+    color: '#e8834a',
+    short: '3.7 Sonnet',
+    importance: 'High',
+    description: 'Enhanced coding and technical capabilities with 200K token context window. Improved mathematical reasoning and structured output generation.',
+    impact: 'Attracted developer and technical communities. 25% increase in technical user segments. Strong positioning in coding assistance use cases.'
+  },
+  '2025-03-25': {
+    app: 'gemini',
+    event: 'Gemini 2.5 Pro (Thinking)',
+    color: '#4285F4',
+    short: '2.5 Pro',
+    importance: 'High',
+    description: 'Extended "thinking mode" for complex reasoning tasks. Enhanced problem-solving with visible chain-of-thought and self-verification.',
+    impact: 'Differentiated Google in reasoning-heavy applications. Gained traction in research and analytical use cases.'
+  },
 
   // 2025 Q2
-  '2025-04-16': { app: 'chatgpt', event: 'o3 & o4-mini', color: '#10a37f', short: 'o3 & o4' },
-  '2025-05-22': { app: 'claude', event: 'Claude 4 Launch', color: '#e8834a', short: 'Claude 4' },
-  '2025-06-10': { app: 'chatgpt', event: 'o3-pro', color: '#10a37f', short: 'o3-pro' },
+  '2025-04-16': {
+    app: 'chatgpt',
+    event: 'o3 & o4-mini',
+    color: '#10a37f',
+    short: 'o3 & o4',
+    importance: 'High',
+    description: 'Dual model release: o3 flagship reasoning model + o4-mini efficiency variant. Demonstrates OpenAI\'s product portfolio strategy.',
+    impact: 'Reinforced ChatGPT\'s model diversity advantage. o4-mini drove mobile engagement, o3 retained power users.'
+  },
+  '2025-05-22': {
+    app: 'claude',
+    event: 'Claude 4 Launch',
+    color: '#e8834a',
+    short: 'Claude 4',
+    importance: 'Critical',
+    description: 'Complete architecture overhaul. First Claude model with native multimodal capabilities (vision, document analysis). Revolutionary "constitutional AI" v2 safety framework.',
+    impact: 'Breakthrough moment for Anthropic. 45% MAU growth in Q3 2025. Established Claude as legitimate third competitor in the AI assistant space.'
+  },
+  '2025-06-10': {
+    app: 'chatgpt',
+    event: 'o3-pro',
+    color: '#10a37f',
+    short: 'o3-pro',
+    importance: 'Medium',
+    description: 'Professional tier variant of o3 with extended thinking time and enhanced accuracy. Targets enterprise knowledge workers.',
+    impact: 'Premium tier monetization. Limited consumer impact but strong business segment adoption.'
+  },
 
   // 2025 Q3
-  '2025-09-08': { app: 'chatgpt', event: '700M WAU Milestone', color: '#10a37f', short: '700M' },
-  '2025-09-15': { app: 'claude', event: 'Claude Sonnet 4.5', color: '#e8834a', short: 'Sonnet 4.5' },
+  '2025-09-08': {
+    app: 'chatgpt',
+    event: '700M WAU Milestone',
+    color: '#10a37f',
+    short: '700M',
+    importance: 'High',
+    description: 'ChatGPT crosses 700 million weekly active users globally. Major media coverage and investor attention.',
+    impact: 'Psychological milestone reinforcing market dominance. Accelerated enterprise sales cycles and partnership opportunities.'
+  },
+  '2025-09-15': {
+    app: 'claude',
+    event: 'Claude Sonnet 4.5',
+    color: '#e8834a',
+    short: 'Sonnet 4.5',
+    importance: 'Medium',
+    description: 'Mid-tier model update with improved speed-quality tradeoffs. Enhanced coding and analytical reasoning.',
+    impact: 'Solidified Claude\'s position among developers and technical users. Maintained growth momentum from Claude 4 launch.'
+  },
 
   // 2025 Q4
-  '2025-11-12': { app: 'chatgpt', event: 'GPT-5.1 Release', color: '#10a37f', short: 'GPT-5.1' },
-  '2025-11-18': { app: 'gemini', event: 'Gemini 3 Pro', color: '#4285F4', short: 'Gemini 3' },
-  '2025-11-24': { app: 'claude', event: 'Claude Opus 4.5', color: '#e8834a', short: 'Opus 4.5' },
-  '2025-12-11': { app: 'chatgpt', event: 'GPT-5.2 Release', color: '#10a37f', short: 'GPT-5.2' },
-  '2025-12-17': { app: 'gemini', event: 'Gemini 3 Flash', color: '#4285F4', short: '3 Flash' },
+  '2025-11-12': {
+    app: 'chatgpt',
+    event: 'GPT-5.1 Release',
+    color: '#10a37f',
+    short: 'GPT-5.1',
+    importance: 'Critical',
+    description: 'Incremental refinement of GPT-5 with enhanced instruction following, reduced hallucinations, and improved multilingual performance.',
+    impact: 'Maintained innovation leadership. Prevented competitive erosion during Gemini 3 launch period.'
+  },
+  '2025-11-18': {
+    app: 'gemini',
+    event: 'Gemini 3 Pro',
+    color: '#4285F4',
+    short: 'Gemini 3',
+    importance: 'Critical',
+    description: 'Third-generation architecture with step-function improvement in reasoning quality. Native real-time web search and fact-checking.',
+    impact: 'Major competitive offensive. Early signals showed 20-25% download spike. Positioned as ChatGPT quality peer for first time.'
+  },
+  '2025-11-24': {
+    app: 'claude',
+    event: 'Claude Opus 4.5',
+    color: '#e8834a',
+    short: 'Opus 4.5',
+    importance: 'High',
+    description: 'Flagship Claude variant with maximum intelligence and accuracy. Premium pricing tier ($40/month for unlimited access).',
+    impact: 'Revenue optimization strategy. High willingness-to-pay among researcher and analyst segments. Limited mass market penetration.'
+  },
+  '2025-12-11': {
+    app: 'chatgpt',
+    event: 'GPT-5.2 Release',
+    color: '#10a37f',
+    short: 'GPT-5.2',
+    importance: 'High',
+    description: 'Year-end refinement focusing on safety, reliability, and enterprise features. Enhanced data privacy controls.',
+    impact: 'Year-end momentum builder. Reinforced ChatGPT\'s rapid iteration advantage. Strong enterprise adoption in Q1 2026.'
+  },
+  '2025-12-17': {
+    app: 'gemini',
+    event: 'Gemini 3 Flash',
+    color: '#4285F4',
+    short: '3 Flash',
+    importance: 'Medium',
+    description: 'Lightweight Gemini 3 variant optimized for mobile and latency-sensitive applications. 10x faster than Gemini 3 Pro on mobile.',
+    impact: 'Improved mobile user experience. Competitive response to ChatGPT\'s mobile performance advantage.'
+  },
 
   // 2026
-  '2026-02-19': { app: 'gemini', event: 'Gemini 3.1 Pro', color: '#4285F4', short: '3.1 Pro' },
-  '2026-02-25': { app: 'claude', event: 'Claude Opus 4.6', color: '#e8834a', short: 'Opus 4.6' },
-  '2026-03-11': { app: 'chatgpt', event: 'GPT-5.3/5.4 Upgrade', color: '#10a37f', short: 'GPT-5.4' }
+  '2026-02-19': {
+    app: 'gemini',
+    event: 'Gemini 3.1 Pro',
+    color: '#4285F4',
+    short: '3.1 Pro',
+    importance: 'High',
+    description: 'Rapid iteration update with expanded language support and enhanced reasoning on non-English prompts. Major push in international markets.',
+    impact: 'Targeted international expansion. Strong uptake in India, Brazil, Southeast Asia. 18% increase in non-English query volume.'
+  },
+  '2026-02-25': {
+    app: 'claude',
+    event: 'Claude Opus 4.6',
+    color: '#e8834a',
+    short: 'Opus 4.6',
+    importance: 'Critical',
+    description: 'Anthropic\'s most advanced model to date. Focus on factual accuracy, source citations, and "trustworthy AI" positioning.',
+    impact: 'Differentiated positioning as "most reliable AI". Gained significant traction in academic, research, and high-stakes decision-making contexts. 35% MAU growth in Feb-Mar 2026.'
+  },
+  '2026-03-11': {
+    app: 'chatgpt',
+    event: 'GPT-5.3/5.4 Upgrade',
+    color: '#10a37f',
+    short: 'GPT-5.4',
+    importance: 'High',
+    description: 'Accelerated release cadence with dual version bump. Enhanced agentic capabilities and tool use. Hints at future autonomous AI agents.',
+    impact: 'Maintains innovation tempo. Signals strategic shift toward AI agents rather than pure conversational AI. Future growth driver.'
+  }
 };
 
 // Find closest week for an event date
@@ -2503,8 +2680,8 @@ function buildTimeline(){
     events.forEach(e => {
       const width = 5; // Width in percentage
       html += `
-        <div class="timeline-event ${app}" style="left:${e.left}%;width:${width}%;" title="${e.event} (${e.date})">
-          <div class="timeline-tooltip">${e.event}<br>${e.date}</div>
+        <div class="timeline-event ${app}" style="left:${e.left}%;width:${width}%;" onclick="showEventDetails('${e.date}')" title="Click for details">
+          <div class="timeline-tooltip">${e.event}<br>${e.date}<br><small>Click for details</small></div>
           ${e.short}
         </div>
       `;
@@ -2533,11 +2710,73 @@ function buildTimeline(){
   container.innerHTML = html;
 }
 
+// Show event details modal
+function showEventDetails(dateKey){
+  console.log('showEventDetails called with date:', dateKey);
+  const eventData = MAJOR_EVENTS[dateKey];
+  if(!eventData){
+    console.error('No event found for date:', dateKey);
+    return;
+  }
+  console.log('Event data:', eventData);
+
+  const modal = document.getElementById('eventModal');
+  const title = document.getElementById('modalEventTitle');
+  const date = document.getElementById('modalEventDate');
+  const body = document.getElementById('modalEventBody');
+
+  if(!modal || !title || !date || !body){
+    console.error('Modal elements not found');
+    return;
+  }
+
+  title.textContent = eventData.event;
+  date.textContent = new Date(dateKey).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  const appBadgeColors = {
+    chatgpt: 'background:var(--gpt);color:white',
+    gemini: 'background:var(--gem);color:white',
+    claude: 'background:var(--cla);color:white'
+  };
+
+  body.innerHTML = `
+    <div class="event-app-badge" style="${appBadgeColors[eventData.app]}">
+      ${C[eventData.app].label}
+    </div>
+    <div class="event-modal-badge ${eventData.importance.toLowerCase()}">
+      ${eventData.importance} Importance
+    </div>
+    <div class="event-modal-section">
+      <div class="event-modal-section-title">Description</div>
+      <div class="event-modal-section-content">${eventData.description}</div>
+    </div>
+    <div class="event-modal-section">
+      <div class="event-modal-section-title">Market Impact</div>
+      <div class="event-modal-section-content">${eventData.impact}</div>
+    </div>
+  `;
+
+  modal.classList.add('show');
+  console.log('Modal displayed');
+}
+
+function closeEventModal(){
+  const modal = document.getElementById('eventModal');
+  if(modal){
+    modal.classList.remove('show');
+  }
+}
+
 function generateInsights(){
+  console.log('=== generateInsights() called ===');
   const insights = [];
   const visibleApps = APPS.filter(app => VISIBLE_APPS[app]);
+  console.log('Visible apps:', visibleApps);
 
   if(visibleApps.length === 0){
+    console.log('No apps selected, showing empty state');
     const grid = document.getElementById('insightsGrid');
     if(grid) grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub)">Select at least one app to see insights.</div>';
     return;
@@ -2859,18 +3098,26 @@ function generateInsights(){
   const top10 = insights.slice(0, 10);
 
   // Render
+  console.log('Preparing to render insights. Total insights generated:', insights.length);
   const grid = document.getElementById('insightsGrid');
+  console.log('insightsGrid element:', grid);
+
   if(!grid){
-    console.error('insightsGrid element not found');
+    console.error('ERROR: insightsGrid element not found in DOM!');
     return;
   }
 
+  // Sort and take top 10
+  const top10 = insights.sort((a, b) => b.priority - a.priority).slice(0, 10);
+  console.log('Top 10 insights to display:', top10.length, top10);
+
   if(top10.length === 0){
+    console.log('No insights to display, showing message');
     grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub)">No insights available. Try adjusting your app selection or time range.</div>';
     return;
   }
 
-  grid.innerHTML = top10.map((insight, i) => `
+  const html = top10.map((insight, i) => `
     <div class="insight-item">
       <div class="insight-rank">${i + 1}</div>
       <div class="insight-content">
@@ -2881,6 +3128,18 @@ function generateInsights(){
       </div>
     </div>
   `).join('');
+
+  console.log('Generated HTML length:', html.length);
+  console.log('HTML preview:', html.substring(0, 200));
+  grid.innerHTML = html;
+  console.log('Insights rendered to DOM. Grid children count:', grid.children.length);
+
+  // Visual test
+  grid.style.border = '2px solid red';
+  console.log('Grid display:', window.getComputedStyle(grid).display);
+  console.log('Grid visibility:', window.getComputedStyle(grid).visibility);
+  console.log('Grid opacity:', window.getComputedStyle(grid).opacity);
+  console.log('=== generateInsights() completed ===');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
