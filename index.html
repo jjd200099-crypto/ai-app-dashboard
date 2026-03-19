@@ -122,11 +122,11 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
 /* ── event modal ── */
 .event-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:1000;align-items:center;justify-content:center;padding:20px}
 .event-modal.show{display:flex}
-.event-modal-content{background:var(--card);border:1px solid var(--border);border-radius:14px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;position:relative}
-.event-modal-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between}
+.event-modal-content{background:var(--card);border:1px solid var(--border);border-radius:14px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto}
+.event-modal-header{padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
 .event-modal-title{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px}
 .event-modal-date{font-size:.8rem;color:var(--sub)}
-.event-modal-close{background:none;border:none;color:var(--sub);font-size:1.5rem;cursor:pointer;padding:0;line-height:1;transition:.2s}
+.event-modal-close{background:none;border:none;color:var(--sub);font-size:1.5rem;cursor:pointer;padding:0}
 .event-modal-close:hover{color:var(--text)}
 .event-modal-body{padding:20px}
 .event-modal-badge{display:inline-block;padding:4px 12px;border-radius:6px;font-size:.75rem;font-weight:600;margin-bottom:16px}
@@ -134,10 +134,9 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
 .event-modal-badge.high{background:rgba(251,191,36,.2);color:#fbbf24}
 .event-modal-badge.medium{background:rgba(96,165,250,.2);color:#60a5fa}
 .event-modal-section{margin-bottom:20px}
-.event-modal-section:last-child{margin-bottom:0}
-.event-modal-section-title{font-size:.75rem;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.event-modal-section-title{font-size:.75rem;font-weight:600;color:var(--sub);text-transform:uppercase;margin-bottom:8px}
 .event-modal-section-content{font-size:.85rem;line-height:1.6;color:var(--text)}
-.event-app-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:.75rem;font-weight:600;margin-bottom:12px}
+.event-app-badge{display:inline-flex;padding:4px 10px;border-radius:6px;font-size:.75rem;font-weight:600;margin-bottom:12px}
 /* ── upload section ── */
 .upload-section{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:20px;overflow:hidden}
 .upload-header{padding:14px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:.2s}
@@ -386,7 +385,6 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
 
 <footer>Data: Sensor Tower Enterprise &nbsp;|&nbsp; Platforms: App Store + Google Play &nbsp;|&nbsp; Metric: Unified (deduped across devices)</footer>
 
-<!-- Event Details Modal -->
 <div class="event-modal" id="eventModal" onclick="if(event.target===this) closeEventModal()">
   <div class="event-modal-content">
     <div class="event-modal-header">
@@ -2440,177 +2438,24 @@ function downloadTemplate(type){
 
 // ── Major Events Timeline (2025-2026) ─────────────────────────────────────────
 const MAJOR_EVENTS = {
-  // 2025 Q1
-  '2025-01-30': {
-    app: 'gemini',
-    event: 'Gemini 2.0 Flash',
-    color: '#4285F4',
-    short: '2.0 Flash',
-    importance: 'High',
-    description: 'Second-generation Flash model with 2x faster response times and improved multimodal understanding. Native image, video, and audio processing with enhanced context window.',
-    impact: 'Drove 15% increase in Gemini weekly downloads over the following 3 weeks. Positioned Google as performance leader in mobile AI applications.'
-  },
-  '2025-01-31': {
-    app: 'chatgpt',
-    event: 'o3-mini Launch',
-    color: '#10a37f',
-    short: 'o3-mini',
-    importance: 'Medium',
-    description: 'Lightweight reasoning model optimized for mobile devices with reduced latency and memory footprint. Targets emerging markets with lower-spec hardware.',
-    impact: 'Improved mobile app performance metrics. Enhanced accessibility in price-sensitive markets (India, Southeast Asia, Latin America).'
-  },
-  '2025-02-05': {
-    app: 'gemini',
-    event: 'Gemini 2.0 Pro',
-    color: '#4285F4',
-    short: '2.0 Pro',
-    importance: 'Critical',
-    description: 'Enterprise-grade model with advanced reasoning, superior code generation, and 1M token context window. Deep Workspace integration and data residency options.',
-    impact: 'Major competitive response to ChatGPT Enterprise. Secured Fortune 500 partnerships. Positioned Gemini as serious B2B challenger.'
-  },
-  '2025-02-15': {
-    app: 'claude',
-    event: 'Claude 3.7 Sonnet',
-    color: '#e8834a',
-    short: '3.7 Sonnet',
-    importance: 'High',
-    description: 'Enhanced coding and technical capabilities with 200K token context window. Improved mathematical reasoning and structured output generation.',
-    impact: 'Attracted developer and technical communities. 25% increase in technical user segments. Strong positioning in coding assistance use cases.'
-  },
-  '2025-03-25': {
-    app: 'gemini',
-    event: 'Gemini 2.5 Pro (Thinking)',
-    color: '#4285F4',
-    short: '2.5 Pro',
-    importance: 'High',
-    description: 'Extended "thinking mode" for complex reasoning tasks. Enhanced problem-solving with visible chain-of-thought and self-verification.',
-    impact: 'Differentiated Google in reasoning-heavy applications. Gained traction in research and analytical use cases.'
-  },
-
-  // 2025 Q2
-  '2025-04-16': {
-    app: 'chatgpt',
-    event: 'o3 & o4-mini',
-    color: '#10a37f',
-    short: 'o3 & o4',
-    importance: 'High',
-    description: 'Dual model release: o3 flagship reasoning model + o4-mini efficiency variant. Demonstrates OpenAI\'s product portfolio strategy.',
-    impact: 'Reinforced ChatGPT\'s model diversity advantage. o4-mini drove mobile engagement, o3 retained power users.'
-  },
-  '2025-05-22': {
-    app: 'claude',
-    event: 'Claude 4 Launch',
-    color: '#e8834a',
-    short: 'Claude 4',
-    importance: 'Critical',
-    description: 'Complete architecture overhaul. First Claude model with native multimodal capabilities (vision, document analysis). Revolutionary "constitutional AI" v2 safety framework.',
-    impact: 'Breakthrough moment for Anthropic. 45% MAU growth in Q3 2025. Established Claude as legitimate third competitor in the AI assistant space.'
-  },
-  '2025-06-10': {
-    app: 'chatgpt',
-    event: 'o3-pro',
-    color: '#10a37f',
-    short: 'o3-pro',
-    importance: 'Medium',
-    description: 'Professional tier variant of o3 with extended thinking time and enhanced accuracy. Targets enterprise knowledge workers.',
-    impact: 'Premium tier monetization. Limited consumer impact but strong business segment adoption.'
-  },
-
-  // 2025 Q3
-  '2025-09-08': {
-    app: 'chatgpt',
-    event: '700M WAU Milestone',
-    color: '#10a37f',
-    short: '700M',
-    importance: 'High',
-    description: 'ChatGPT crosses 700 million weekly active users globally. Major media coverage and investor attention.',
-    impact: 'Psychological milestone reinforcing market dominance. Accelerated enterprise sales cycles and partnership opportunities.'
-  },
-  '2025-09-15': {
-    app: 'claude',
-    event: 'Claude Sonnet 4.5',
-    color: '#e8834a',
-    short: 'Sonnet 4.5',
-    importance: 'Medium',
-    description: 'Mid-tier model update with improved speed-quality tradeoffs. Enhanced coding and analytical reasoning.',
-    impact: 'Solidified Claude\'s position among developers and technical users. Maintained growth momentum from Claude 4 launch.'
-  },
-
-  // 2025 Q4
-  '2025-11-12': {
-    app: 'chatgpt',
-    event: 'GPT-5.1 Release',
-    color: '#10a37f',
-    short: 'GPT-5.1',
-    importance: 'Critical',
-    description: 'Incremental refinement of GPT-5 with enhanced instruction following, reduced hallucinations, and improved multilingual performance.',
-    impact: 'Maintained innovation leadership. Prevented competitive erosion during Gemini 3 launch period.'
-  },
-  '2025-11-18': {
-    app: 'gemini',
-    event: 'Gemini 3 Pro',
-    color: '#4285F4',
-    short: 'Gemini 3',
-    importance: 'Critical',
-    description: 'Third-generation architecture with step-function improvement in reasoning quality. Native real-time web search and fact-checking.',
-    impact: 'Major competitive offensive. Early signals showed 20-25% download spike. Positioned as ChatGPT quality peer for first time.'
-  },
-  '2025-11-24': {
-    app: 'claude',
-    event: 'Claude Opus 4.5',
-    color: '#e8834a',
-    short: 'Opus 4.5',
-    importance: 'High',
-    description: 'Flagship Claude variant with maximum intelligence and accuracy. Premium pricing tier ($40/month for unlimited access).',
-    impact: 'Revenue optimization strategy. High willingness-to-pay among researcher and analyst segments. Limited mass market penetration.'
-  },
-  '2025-12-11': {
-    app: 'chatgpt',
-    event: 'GPT-5.2 Release',
-    color: '#10a37f',
-    short: 'GPT-5.2',
-    importance: 'High',
-    description: 'Year-end refinement focusing on safety, reliability, and enterprise features. Enhanced data privacy controls.',
-    impact: 'Year-end momentum builder. Reinforced ChatGPT\'s rapid iteration advantage. Strong enterprise adoption in Q1 2026.'
-  },
-  '2025-12-17': {
-    app: 'gemini',
-    event: 'Gemini 3 Flash',
-    color: '#4285F4',
-    short: '3 Flash',
-    importance: 'Medium',
-    description: 'Lightweight Gemini 3 variant optimized for mobile and latency-sensitive applications. 10x faster than Gemini 3 Pro on mobile.',
-    impact: 'Improved mobile user experience. Competitive response to ChatGPT\'s mobile performance advantage.'
-  },
-
-  // 2026
-  '2026-02-19': {
-    app: 'gemini',
-    event: 'Gemini 3.1 Pro',
-    color: '#4285F4',
-    short: '3.1 Pro',
-    importance: 'High',
-    description: 'Rapid iteration update with expanded language support and enhanced reasoning on non-English prompts. Major push in international markets.',
-    impact: 'Targeted international expansion. Strong uptake in India, Brazil, Southeast Asia. 18% increase in non-English query volume.'
-  },
-  '2026-02-25': {
-    app: 'claude',
-    event: 'Claude Opus 4.6',
-    color: '#e8834a',
-    short: 'Opus 4.6',
-    importance: 'Critical',
-    description: 'Anthropic\'s most advanced model to date. Focus on factual accuracy, source citations, and "trustworthy AI" positioning.',
-    impact: 'Differentiated positioning as "most reliable AI". Gained significant traction in academic, research, and high-stakes decision-making contexts. 35% MAU growth in Feb-Mar 2026.'
-  },
-  '2026-03-11': {
-    app: 'chatgpt',
-    event: 'GPT-5.3/5.4 Upgrade',
-    color: '#10a37f',
-    short: 'GPT-5.4',
-    importance: 'High',
-    description: 'Accelerated release cadence with dual version bump. Enhanced agentic capabilities and tool use. Hints at future autonomous AI agents.',
-    impact: 'Maintains innovation tempo. Signals strategic shift toward AI agents rather than pure conversational AI. Future growth driver.'
-  }
+  '2025-01-30': { app: 'gemini', event: 'Gemini 2.0 Flash', color: '#4285F4', short: '2.0 Flash', importance: 'High', description: 'Second-generation Flash model with 2x faster response times and improved multimodal understanding.', impact: 'Drove 15% increase in Gemini weekly downloads over the following 3 weeks.' },
+  '2025-01-31': { app: 'chatgpt', event: 'o3-mini Launch', color: '#10a37f', short: 'o3-mini', importance: 'Medium', description: 'Lightweight reasoning model optimized for mobile devices with reduced latency.', impact: 'Improved mobile app performance metrics. Enhanced accessibility in emerging markets.' },
+  '2025-02-05': { app: 'gemini', event: 'Gemini 2.0 Pro', color: '#4285F4', short: '2.0 Pro', importance: 'Critical', description: 'Enterprise-grade model with advanced reasoning, superior code generation, and 1M token context window.', impact: 'Major competitive response to ChatGPT Enterprise. Positioned Gemini as serious B2B challenger.' },
+  '2025-02-15': { app: 'claude', event: 'Claude 3.7 Sonnet', color: '#e8834a', short: '3.7 Sonnet', importance: 'High', description: 'Enhanced coding and technical capabilities with 200K token context window.', impact: 'Attracted developer communities. 25% increase in technical user segments.' },
+  '2025-03-25': { app: 'gemini', event: 'Gemini 2.5 Pro (Thinking)', color: '#4285F4', short: '2.5 Pro', importance: 'High', description: 'Extended thinking mode for complex reasoning tasks with visible chain-of-thought.', impact: 'Differentiated Google in reasoning-heavy applications.' },
+  '2025-04-16': { app: 'chatgpt', event: 'o3 & o4-mini', color: '#10a37f', short: 'o3 & o4', importance: 'High', description: 'Dual model release: o3 flagship reasoning model plus o4-mini efficiency variant.', impact: 'Reinforced ChatGPT model diversity advantage.' },
+  '2025-05-22': { app: 'claude', event: 'Claude 4 Launch', color: '#e8834a', short: 'Claude 4', importance: 'Critical', description: 'Complete architecture overhaul. First Claude model with native multimodal capabilities.', impact: 'Breakthrough moment for Anthropic. 45% MAU growth in Q3 2025.' },
+  '2025-06-10': { app: 'chatgpt', event: 'o3-pro', color: '#10a37f', short: 'o3-pro', importance: 'Medium', description: 'Professional tier variant of o3 with extended thinking time and enhanced accuracy.', impact: 'Premium tier monetization. Limited consumer impact but strong business adoption.' },
+  '2025-09-08': { app: 'chatgpt', event: '700M WAU Milestone', color: '#10a37f', short: '700M', importance: 'High', description: 'ChatGPT crosses 700 million weekly active users globally. Major media coverage.', impact: 'Psychological milestone reinforcing market dominance.' },
+  '2025-09-15': { app: 'claude', event: 'Claude Sonnet 4.5', color: '#e8834a', short: 'Sonnet 4.5', importance: 'Medium', description: 'Mid-tier model update with improved speed-quality tradeoffs.', impact: 'Solidified Claude position among developers and technical users.' },
+  '2025-11-12': { app: 'chatgpt', event: 'GPT-5.1 Release', color: '#10a37f', short: 'GPT-5.1', importance: 'Critical', description: 'Incremental refinement of GPT-5 with enhanced instruction following and reduced hallucinations.', impact: 'Maintained innovation leadership during Gemini 3 launch period.' },
+  '2025-11-18': { app: 'gemini', event: 'Gemini 3 Pro', color: '#4285F4', short: 'Gemini 3', importance: 'Critical', description: 'Third-generation architecture with step-function improvement in reasoning quality.', impact: 'Major competitive offensive. Early signals showed 20-25% download spike.' },
+  '2025-11-24': { app: 'claude', event: 'Claude Opus 4.5', color: '#e8834a', short: 'Opus 4.5', importance: 'High', description: 'Flagship Claude variant with maximum intelligence and accuracy. Premium pricing tier.', impact: 'Revenue optimization strategy. High willingness-to-pay among researchers.' },
+  '2025-12-11': { app: 'chatgpt', event: 'GPT-5.2 Release', color: '#10a37f', short: 'GPT-5.2', importance: 'High', description: 'Year-end refinement focusing on safety, reliability, and enterprise features.', impact: 'Year-end momentum builder. Strong enterprise adoption in Q1 2026.' },
+  '2025-12-17': { app: 'gemini', event: 'Gemini 3 Flash', color: '#4285F4', short: '3 Flash', importance: 'Medium', description: 'Lightweight Gemini 3 variant optimized for mobile and latency-sensitive applications.', impact: 'Improved mobile user experience. Competitive response to ChatGPT mobile performance.' },
+  '2026-02-19': { app: 'gemini', event: 'Gemini 3.1 Pro', color: '#4285F4', short: '3.1 Pro', importance: 'High', description: 'Rapid iteration update with expanded language support and enhanced reasoning.', impact: 'Targeted international expansion. Strong uptake in India, Brazil, Southeast Asia.' },
+  '2026-02-25': { app: 'claude', event: 'Claude Opus 4.6', color: '#e8834a', short: 'Opus 4.6', importance: 'Critical', description: 'Most advanced Claude model to date. Focus on factual accuracy and source citations.', impact: 'Differentiated as most reliable AI. 35% MAU growth in Feb-Mar 2026.' },
+  '2026-03-11': { app: 'chatgpt', event: 'GPT-5.3/5.4 Upgrade', color: '#10a37f', short: 'GPT-5.4', importance: 'High', description: 'Accelerated release cadence with dual version bump. Enhanced agentic capabilities.', impact: 'Maintains innovation tempo. Signals strategic shift toward AI agents.' }
 };
 
 // Find closest week for an event date
@@ -2680,7 +2525,7 @@ function buildTimeline(){
     events.forEach(e => {
       const width = 5; // Width in percentage
       html += `
-        <div class="timeline-event ${app}" style="left:${e.left}%;width:${width}%;" onclick="showEventDetails('${e.date}')" title="Click for details">
+        <div class="timeline-event ${app}" style="left:${e.left}%;width:${width}%;cursor:pointer" onclick="showEventDetails('${e.date}')" title="Click for details">
           <div class="timeline-tooltip">${e.event}<br>${e.date}<br><small>Click for details</small></div>
           ${e.short}
         </div>
@@ -2710,73 +2555,35 @@ function buildTimeline(){
   container.innerHTML = html;
 }
 
-// Show event details modal
 function showEventDetails(dateKey){
-  console.log('showEventDetails called with date:', dateKey);
   const eventData = MAJOR_EVENTS[dateKey];
-  if(!eventData){
-    console.error('No event found for date:', dateKey);
-    return;
-  }
-  console.log('Event data:', eventData);
-
+  if(!eventData) return;
   const modal = document.getElementById('eventModal');
   const title = document.getElementById('modalEventTitle');
-  const date = document.getElementById('modalEventDate');
+  const dateEl = document.getElementById('modalEventDate');
   const body = document.getElementById('modalEventBody');
-
-  if(!modal || !title || !date || !body){
-    console.error('Modal elements not found');
-    return;
-  }
-
+  if(!modal || !title || !dateEl || !body) return;
   title.textContent = eventData.event;
-  date.textContent = new Date(dateKey).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  });
-
-  const appBadgeColors = {
-    chatgpt: 'background:var(--gpt);color:white',
-    gemini: 'background:var(--gem);color:white',
-    claude: 'background:var(--cla);color:white'
-  };
-
-  body.innerHTML = `
-    <div class="event-app-badge" style="${appBadgeColors[eventData.app]}">
-      ${C[eventData.app].label}
-    </div>
-    <div class="event-modal-badge ${eventData.importance.toLowerCase()}">
-      ${eventData.importance} Importance
-    </div>
-    <div class="event-modal-section">
-      <div class="event-modal-section-title">Description</div>
-      <div class="event-modal-section-content">${eventData.description}</div>
-    </div>
-    <div class="event-modal-section">
-      <div class="event-modal-section-title">Market Impact</div>
-      <div class="event-modal-section-content">${eventData.impact}</div>
-    </div>
-  `;
-
+  dateEl.textContent = new Date(dateKey).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'});
+  const appColors = {chatgpt: 'background:var(--gpt);color:white', gemini: 'background:var(--gem);color:white', claude: 'background:var(--cla);color:white'};
+  const imp = eventData.importance || 'Medium';
+  const desc = eventData.description || 'No description available';
+  const impactText = eventData.impact || 'Impact data not available';
+  body.innerHTML = '<div class="event-app-badge" style="' + appColors[eventData.app] + '">' + C[eventData.app].label + '</div>' + '<div class="event-modal-badge ' + imp.toLowerCase() + '">' + imp + ' Importance</div>' + '<div class="event-modal-section"><div class="event-modal-section-title">Description</div><div class="event-modal-section-content">' + desc + '</div></div>' + '<div class="event-modal-section"><div class="event-modal-section-title">Market Impact</div><div class="event-modal-section-content">' + impactText + '</div></div>';
   modal.classList.add('show');
-  console.log('Modal displayed');
 }
 
 function closeEventModal(){
   const modal = document.getElementById('eventModal');
-  if(modal){
-    modal.classList.remove('show');
-  }
+  if(modal) modal.classList.remove('show');
 }
 
 function generateInsights(){
-  console.log('=== generateInsights() called ===');
+  console.log('generateInsights called');
   const insights = [];
   const visibleApps = APPS.filter(app => VISIBLE_APPS[app]);
-  console.log('Visible apps:', visibleApps);
 
   if(visibleApps.length === 0){
-    console.log('No apps selected, showing empty state');
     const grid = document.getElementById('insightsGrid');
     if(grid) grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub)">Select at least one app to see insights.</div>';
     return;
@@ -3098,26 +2905,18 @@ function generateInsights(){
   const top10 = insights.slice(0, 10);
 
   // Render
-  console.log('Preparing to render insights. Total insights generated:', insights.length);
   const grid = document.getElementById('insightsGrid');
-  console.log('insightsGrid element:', grid);
-
   if(!grid){
-    console.error('ERROR: insightsGrid element not found in DOM!');
+    console.error('insightsGrid element not found');
     return;
   }
 
-  // Sort and take top 10
-  const top10 = insights.sort((a, b) => b.priority - a.priority).slice(0, 10);
-  console.log('Top 10 insights to display:', top10.length, top10);
-
   if(top10.length === 0){
-    console.log('No insights to display, showing message');
     grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub)">No insights available. Try adjusting your app selection or time range.</div>';
     return;
   }
 
-  const html = top10.map((insight, i) => `
+  grid.innerHTML = top10.map((insight, i) => `
     <div class="insight-item">
       <div class="insight-rank">${i + 1}</div>
       <div class="insight-content">
@@ -3128,18 +2927,6 @@ function generateInsights(){
       </div>
     </div>
   `).join('');
-
-  console.log('Generated HTML length:', html.length);
-  console.log('HTML preview:', html.substring(0, 200));
-  grid.innerHTML = html;
-  console.log('Insights rendered to DOM. Grid children count:', grid.children.length);
-
-  // Visual test
-  grid.style.border = '2px solid red';
-  console.log('Grid display:', window.getComputedStyle(grid).display);
-  console.log('Grid visibility:', window.getComputedStyle(grid).visibility);
-  console.log('Grid opacity:', window.getComputedStyle(grid).opacity);
-  console.log('=== generateInsights() completed ===');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
