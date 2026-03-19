@@ -1929,12 +1929,28 @@ async function buildWorldMap(){
   const response = await fetch('https://unpkg.com/world-atlas@2.0.2/countries-50m.json');
   const worldData = await response.json();
 
-  // Map ISO codes to our country codes
+  // ISO numeric to our country code mapping
   const isoMapping = {
-    'IND':'IN', 'USA':'US', 'BRA':'BR', 'IDN':'ID', 'PAK':'PK',
-    'MEX':'MX', 'TUR':'TR', 'EGY':'EG', 'VNM':'VN', 'DEU':'DE',
-    'THA':'TH', 'JPN':'JP', 'SAU':'SA', 'FRA':'FR', 'GBR':'GB',
-    'BGD':'BD', 'COL':'CO', 'PHL':'PH', 'KOR':'KR', 'NGA':'NG'
+    '356': 'IN', // India
+    '840': 'US', // USA
+    '076': 'BR', // Brazil
+    '360': 'ID', // Indonesia
+    '586': 'PK', // Pakistan
+    '484': 'MX', // Mexico
+    '792': 'TR', // Turkey
+    '818': 'EG', // Egypt
+    '704': 'VN', // Vietnam
+    '276': 'DE', // Germany
+    '764': 'TH', // Thailand
+    '392': 'JP', // Japan
+    '682': 'SA', // Saudi Arabia
+    '250': 'FR', // France
+    '826': 'GB', // UK
+    '050': 'BD', // Bangladesh
+    '170': 'CO', // Colombia
+    '608': 'PH', // Philippines
+    '410': 'KR', // South Korea
+    '566': 'NG'  // Nigeria
   };
 
   // Calculate total for each country (sum of all apps)
@@ -1953,10 +1969,11 @@ async function buildWorldMap(){
   const features = ChartGeo.topojson.feature(worldData, worldData.objects.countries).features;
 
   features.forEach(f => {
-    const iso3 = f.properties.name; // This is actually ISO3 code
-    const code = isoMapping[iso3];
+    const id = f.id; // ISO numeric code
+    const code = isoMapping[id];
     f.properties.value = code && countryTotals[code] ? countryTotals[code] : 0;
     f.properties.code = code;
+    f.properties.displayName = code ? DATA.country_names[code] : f.properties.name;
   });
 
   const ctx = document.getElementById('worldMap').getContext('2d');
@@ -1989,10 +2006,10 @@ async function buildWorldMap(){
             label: (ctx) => {
               const feature = ctx.raw.feature;
               const code = feature.properties.code;
-              if(!code || !src[code]) return feature.properties.name + ': No data';
-              const name = DATA.country_names[code] || feature.properties.name;
+              const displayName = feature.properties.displayName || feature.properties.name;
+              if(!code || !src[code]) return displayName + ': No data';
               const apps = APPS.filter(app => VISIBLE_APPS[app]);
-              const lines = [name + ':'];
+              const lines = [displayName + ':'];
               apps.forEach(app => {
                 const val = src[code][app] || 0;
                 lines.push(`  ${C[app].label}: ${val.toFixed(2)}M`);
