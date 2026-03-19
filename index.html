@@ -2411,20 +2411,35 @@ function downloadTemplate(type){
   URL.revokeObjectURL(url);
 }
 
-// ── Major Events Timeline (for weekly charts) ────────────────────────────────
+// ── Major Events Timeline (for weekly charts, 2025-2026 only) ────────────────
 const MAJOR_EVENTS = {
-  '2024-02-08': { app: 'gemini', event: 'Gemini Launch', color: '#4285F4', short: 'Gemini' },
-  '2024-05-13': { app: 'chatgpt', event: 'GPT-4o', color: '#10a37f', short: 'GPT-4o' },
-  '2024-06-23': { app: 'claude', event: 'Claude 3.5', color: '#e8834a', short: 'Claude 3.5' },
-  '2024-07-25': { app: 'chatgpt', event: 'SearchGPT', color: '#10a37f', short: 'SearchGPT' },
-  '2025-01-31': { app: 'chatgpt', event: 'o3-mini', color: '#10a37f', short: 'o3-mini' },
-  '2025-04-16': { app: 'chatgpt', event: 'o3 & o4-mini', color: '#10a37f', short: 'o3' },
+  // 2025 Q1
+  '2025-01-30': { app: 'gemini', event: 'Gemini 2.0 Flash', color: '#4285F4', short: '2.0 Flash' },
+  '2025-01-31': { app: 'chatgpt', event: 'o3-mini Launch', color: '#10a37f', short: 'o3-mini' },
+  '2025-02-05': { app: 'gemini', event: 'Gemini 2.0 Pro', color: '#4285F4', short: '2.0 Pro' },
+  '2025-02-15': { app: 'claude', event: 'Claude 3.7 Sonnet', color: '#e8834a', short: '3.7 Sonnet' },
+  '2025-03-25': { app: 'gemini', event: 'Gemini 2.5 Pro (Thinking)', color: '#4285F4', short: '2.5 Pro' },
+
+  // 2025 Q2
+  '2025-04-16': { app: 'chatgpt', event: 'o3 & o4-mini', color: '#10a37f', short: 'o3 & o4' },
+  '2025-05-22': { app: 'claude', event: 'Claude 4 Launch', color: '#e8834a', short: 'Claude 4' },
   '2025-06-10': { app: 'chatgpt', event: 'o3-pro', color: '#10a37f', short: 'o3-pro' },
-  '2025-09-08': { app: 'chatgpt', event: '700M Users', color: '#10a37f', short: '700M' },
+
+  // 2025 Q3
+  '2025-09-08': { app: 'chatgpt', event: '700M WAU Milestone', color: '#10a37f', short: '700M' },
+  '2025-09-15': { app: 'claude', event: 'Claude Sonnet 4.5', color: '#e8834a', short: 'Sonnet 4.5' },
+
+  // 2025 Q4
+  '2025-11-12': { app: 'chatgpt', event: 'GPT-5.1 Release', color: '#10a37f', short: 'GPT-5.1' },
   '2025-11-18': { app: 'gemini', event: 'Gemini 3 Pro', color: '#4285F4', short: 'Gemini 3' },
-  '2025-11-24': { app: 'claude', event: 'Opus 4.5', color: '#e8834a', short: 'Opus 4.5' },
-  '2025-12-11': { app: 'chatgpt', event: 'GPT-5.2', color: '#10a37f', short: 'GPT-5.2' },
-  '2026-03-11': { app: 'chatgpt', event: 'GPT-5.3/5.4', color: '#10a37f', short: 'GPT-5.3' }
+  '2025-11-24': { app: 'claude', event: 'Claude Opus 4.5', color: '#e8834a', short: 'Opus 4.5' },
+  '2025-12-11': { app: 'chatgpt', event: 'GPT-5.2 Release', color: '#10a37f', short: 'GPT-5.2' },
+  '2025-12-17': { app: 'gemini', event: 'Gemini 3 Flash', color: '#4285F4', short: '3 Flash' },
+
+  // 2026
+  '2026-02-19': { app: 'gemini', event: 'Gemini 3.1 Pro', color: '#4285F4', short: '3.1 Pro' },
+  '2026-02-25': { app: 'claude', event: 'Claude Opus 4.6', color: '#e8834a', short: 'Opus 4.6' },
+  '2026-03-11': { app: 'chatgpt', event: 'GPT-5.3/5.4 Upgrade', color: '#10a37f', short: 'GPT-5.4' }
 };
 
 // Find closest week for an event date
@@ -2773,6 +2788,16 @@ function generateInsights(){
 
   // Render
   const grid = document.getElementById('insightsGrid');
+  if(!grid){
+    console.error('insightsGrid element not found');
+    return;
+  }
+
+  if(top10.length === 0){
+    grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub)">No insights available. Try adjusting your app selection or time range.</div>';
+    return;
+  }
+
   grid.innerHTML = top10.map((insight, i) => `
     <div class="insight-item">
       <div class="insight-rank">${i + 1}</div>
