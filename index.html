@@ -2486,15 +2486,23 @@ function buildTimeline(){
   const container = document.getElementById('timelineContainer');
   if(!container) return;
 
-  // Get date range from weekly data
+  // Use same date range as WAU/MAU charts
   const weeks = WEEKLY_DATA.dl_weeks || [];
   if(weeks.length === 0) return;
 
-  const startDate = new Date(weeks[0]);
-  const endDate = new Date(weeks[weeks.length - 1]);
+  // Filter out incomplete week like the main charts do
+  let filteredWeeks = weeks;
+  if(weeks.length > 0 && isWeekIncomplete(weeks[weeks.length - 1])){
+    filteredWeeks = weeks.slice(0, -1);
+  }
+
+  if(filteredWeeks.length === 0) return;
+
+  const startDate = new Date(filteredWeeks[0]);
+  const endDate = new Date(filteredWeeks[filteredWeeks.length - 1]);
   const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
 
-  // Group events by app
+  // Group events by app - only show those in range
   const eventsByApp = { chatgpt: [], gemini: [], claude: [] };
   Object.entries(MAJOR_EVENTS).forEach(([date, event]) => {
     const eventDate = new Date(date);
@@ -2905,18 +2913,26 @@ function generateInsights(){
   const top10 = insights.slice(0, 10);
 
   // Render
+  console.log('=== RENDER START ===');
+  console.log('Total insights generated:', insights.length);
+  console.log('Top 10 to render:', top10.length);
+
   const grid = document.getElementById('insightsGrid');
+  console.log('Grid element:', grid);
+
   if(!grid){
-    console.error('insightsGrid element not found');
+    console.error('ERROR: insightsGrid not found!');
+    alert('ERROR: insightsGrid element not found in DOM!');
     return;
   }
 
   if(top10.length === 0){
-    grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub)">No insights available. Try adjusting your app selection or time range.</div>';
+    console.warn('No insights - showing empty state');
+    grid.innerHTML = '<div style="padding:20px;text-align:center;background:#ff0;color:#000">⚠️ No insights. Insights array length: ' + insights.length + '</div>';
     return;
   }
 
-  grid.innerHTML = top10.map((insight, i) => `
+  const html = top10.map((insight, i) => `
     <div class="insight-item">
       <div class="insight-rank">${i + 1}</div>
       <div class="insight-content">
@@ -2927,6 +2943,10 @@ function generateInsights(){
       </div>
     </div>
   `).join('');
+
+  grid.innerHTML = html;
+  console.log('✅ Rendered', grid.children.length, 'insights');
+  console.log('=== RENDER COMPLETE ===');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
