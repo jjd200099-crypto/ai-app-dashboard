@@ -1,0 +1,20 @@
+# 备份文件
+*.backup
+*_before_*.html
+index_with_granularity.html
+index_before_selector.html
+index_before_yaxis_fix.html
+
+# Python 和脚本
+*.py
+__pycache__/
+
+# 数据文件
+*.csv
+
+# 说明文档（可选）
+*.md
+!README.md
+
+# 系统文件
+.DS_Store
