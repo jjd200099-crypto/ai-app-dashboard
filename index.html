@@ -2823,8 +2823,8 @@ function generateInsights(){
   }
 
   // 7. Product Launch Impact Detection
-  if(PRODUCT_LAUNCHES[currentMonth]){
-    const launch = PRODUCT_LAUNCHES[currentMonth];
+  if(MAJOR_EVENTS[currentMonth]){
+    const launch = MAJOR_EVENTS[currentMonth];
     const app = launch.app;
     if(VISIBLE_APPS[app]){
       const growth = lastMonthIdx >= 1 ? ((DATA.mau[app][lastMonthIdx] - DATA.mau[app][lastMonthIdx - 1]) / DATA.mau[app][lastMonthIdx - 1] * 100) : 0;
