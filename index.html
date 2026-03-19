@@ -103,6 +103,22 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
 .insight-tag.share{color:#fbbf24}
 .insight-tag.platform{color:#60a5fa}
 .insight-tag.geo{color:#a78bfa}
+/* ── timeline section ── */
+.timeline-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.timeline-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.timeline-title{font-size:.9rem;font-weight:600;color:var(--text)}
+.timeline-container{position:relative;padding:20px 0}
+.timeline-row{display:flex;align-items:center;margin-bottom:8px;position:relative}
+.timeline-app-label{width:100px;font-size:.75rem;font-weight:600;flex-shrink:0}
+.timeline-track{flex:1;height:32px;position:relative;background:var(--card2);border-radius:6px;overflow:visible}
+.timeline-event{position:absolute;height:28px;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:.7rem;font-weight:600;color:white;cursor:pointer;transition:.2s;top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timeline-event:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:10}
+.timeline-event.chatgpt{background:var(--gpt)}
+.timeline-event.gemini{background:var(--gem)}
+.timeline-event.claude{background:var(--cla)}
+.timeline-tooltip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);color:white;padding:6px 10px;border-radius:6px;font-size:.7rem;white-space:nowrap;opacity:0;pointer-events:none;transition:.2s;margin-bottom:8px;z-index:20}
+.timeline-event:hover .timeline-tooltip{opacity:1}
+.timeline-axis{display:flex;justify-content:space-between;margin-top:12px;padding:0 100px 0 100px;font-size:.7rem;color:var(--sub)}
 /* ── upload section ── */
 .upload-section{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:20px;overflow:hidden}
 .upload-header{padding:14px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:.2s}
@@ -254,6 +270,14 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
     <div class="legend-item"><div class="legend-dot" style="background:var(--cla)"></div>Claude</div>
   </div>
   <div class="chart-wrap"><canvas id="trendChart" height="90"></canvas></div>
+</div>
+
+<!-- Model Release Timeline -->
+<div class="timeline-section">
+  <div class="timeline-header">
+    <div class="timeline-title">🚀 Major Model Releases Timeline (2025-2026)</div>
+  </div>
+  <div class="timeline-container" id="timelineContainer"></div>
 </div>
 
 <!-- Row 2: Platform Split | Market Share -->
@@ -1702,33 +1726,6 @@ function buildTrend(){
     borderWidth: 2
   }));
 
-  // Build event annotations (ONLY for weekly mode)
-  const annotations = {};
-  if(GRANULARITY === 'weekly'){
-    Object.keys(MAJOR_EVENTS).forEach(eventDate => {
-      const closestWeek = findClosestWeek(eventDate, months);
-      if(closestWeek){
-        const weekIndex = months.indexOf(closestWeek);
-        const event = MAJOR_EVENTS[eventDate];
-        annotations['event_' + eventDate] = {
-          type: 'label',
-          xValue: weekIndex,
-          yValue: 'max',
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          borderColor: event.color,
-          borderWidth: 1,
-          borderRadius: 4,
-          content: event.short,
-          color: 'white',
-          font: { size: 9, weight: '600' },
-          padding: { x: 5, y: 2 },
-          position: 'start',
-          yAdjust: -5
-        };
-      }
-    });
-  }
-
   const ctx = document.getElementById('trendChart').getContext('2d');
   if(trendChart) trendChart.destroy();
   trendChart = new Chart(ctx,{
@@ -1743,9 +1740,6 @@ function buildTrend(){
           callbacks:{
             label: i => ' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'M'
           }
-        },
-        annotation: {
-          annotations: annotations
         }
       },
       scales:{
@@ -2411,7 +2405,7 @@ function downloadTemplate(type){
   URL.revokeObjectURL(url);
 }
 
-// ── Major Events Timeline (for weekly charts, 2025-2026 only) ────────────────
+// ── Major Events Timeline (2025-2026) ─────────────────────────────────────────
 const MAJOR_EVENTS = {
   // 2025 Q1
   '2025-01-30': { app: 'gemini', event: 'Gemini 2.0 Flash', color: '#4285F4', short: '2.0 Flash' },
@@ -2465,11 +2459,89 @@ function isWeekIncomplete(weekString){
   return weekEndDate >= today;
 }
 
+// ── Build Timeline ───────────────────────────────────────────────────────────
+function buildTimeline(){
+  const container = document.getElementById('timelineContainer');
+  if(!container) return;
+
+  // Get date range from weekly data
+  const weeks = WEEKLY_DATA.dl_weeks || [];
+  if(weeks.length === 0) return;
+
+  const startDate = new Date(weeks[0]);
+  const endDate = new Date(weeks[weeks.length - 1]);
+  const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+
+  // Group events by app
+  const eventsByApp = { chatgpt: [], gemini: [], claude: [] };
+  Object.entries(MAJOR_EVENTS).forEach(([date, event]) => {
+    const eventDate = new Date(date);
+    if(eventDate >= startDate && eventDate <= endDate){
+      const daysFromStart = (eventDate - startDate) / (1000 * 60 * 60 * 24);
+      const leftPercent = (daysFromStart / totalDays * 100);
+      eventsByApp[event.app].push({
+        date,
+        event: event.event,
+        short: event.short,
+        left: leftPercent
+      });
+    }
+  });
+
+  // Build timeline HTML
+  let html = '';
+  APPS.forEach(app => {
+    const events = eventsByApp[app];
+    if(events.length === 0) return;
+
+    html += `
+      <div class="timeline-row">
+        <div class="timeline-app-label" style="color:${C[app].color}">${C[app].label}</div>
+        <div class="timeline-track">
+    `;
+
+    events.forEach(e => {
+      const width = 5; // Width in percentage
+      html += `
+        <div class="timeline-event ${app}" style="left:${e.left}%;width:${width}%;" title="${e.event} (${e.date})">
+          <div class="timeline-tooltip">${e.event}<br>${e.date}</div>
+          ${e.short}
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+  });
+
+  // Add time axis
+  const months = [];
+  let currentDate = new Date(startDate);
+  while(currentDate <= endDate){
+    months.push(currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+    currentDate.setMonth(currentDate.getMonth() + 3); // Every 3 months
+  }
+
+  html += `
+    <div class="timeline-axis">
+      ${months.map(m => `<span>${m}</span>`).join('')}
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
 function generateInsights(){
   const insights = [];
   const visibleApps = APPS.filter(app => VISIBLE_APPS[app]);
 
-  if(visibleApps.length === 0) return;
+  if(visibleApps.length === 0){
+    const grid = document.getElementById('insightsGrid');
+    if(grid) grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub)">Select at least one app to see insights.</div>';
+    return;
+  }
 
   // Use weekly data for recent trends (excluding incomplete weeks)
   const useWeekly = WEEKLY_DATA && WEEKLY_DATA.dl_weeks && WEEKLY_DATA.dl_weeks.length > 0;
@@ -2818,6 +2890,7 @@ buildPlat();
 buildShare();
 buildCtry();
 buildCtryTable();
+buildTimeline();
 generateInsights();
 </script>
 </body>
