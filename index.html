@@ -374,17 +374,13 @@ footer{text-align:center;color:var(--sub);font-size:.72rem;margin-top:28px}
 </div>
 
 <!-- Data Insights -->
-<div class="insights-section" style="border:3px solid red;background:rgba(255,0,0,0.1)">
+<div class="insights-section">
   <div class="insights-header">
     <span class="insights-icon">💡</span>
     <div class="insights-title">AI-Generated Competitive Insights</div>
     <div class="insights-badge">AUTO</div>
   </div>
-  <div class="insights-grid" id="insightsGrid">
-    <div style="padding:20px;background:yellow;color:black;font-weight:bold">
-      ⚠️ TEST: If you can see this yellow box, the HTML element exists but JavaScript is not rendering insights properly. Check browser console for errors.
-    </div>
-  </div>
+  <div class="insights-grid" id="insightsGrid"></div>
 </div>
 
 <footer>Data: Sensor Tower Enterprise &nbsp;|&nbsp; Platforms: App Store + Google Play &nbsp;|&nbsp; Metric: Unified (deduped across devices)</footer>
@@ -2590,7 +2586,6 @@ function closeEventModal(){
 }
 
 function generateInsights(){
-  console.log('generateInsights called');
   const insights = [];
   const visibleApps = APPS.filter(app => VISIBLE_APPS[app]);
 
@@ -2916,26 +2911,15 @@ function generateInsights(){
   const top10 = insights.slice(0, 10);
 
   // Render
-  console.log('=== RENDER START ===');
-  console.log('Total insights generated:', insights.length);
-  console.log('Top 10 to render:', top10.length);
-
   const grid = document.getElementById('insightsGrid');
-  console.log('Grid element:', grid);
-
-  if(!grid){
-    console.error('ERROR: insightsGrid not found!');
-    alert('ERROR: insightsGrid element not found in DOM!');
-    return;
-  }
+  if(!grid) return;
 
   if(top10.length === 0){
-    console.warn('No insights - showing empty state');
-    grid.innerHTML = '<div style="padding:20px;text-align:center;background:#ff0;color:#000">⚠️ No insights. Insights array length: ' + insights.length + '</div>';
+    grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub)">No insights available. Try adjusting your app selection.</div>';
     return;
   }
 
-  const html = top10.map((insight, i) => `
+  grid.innerHTML = top10.map((insight, i) => `
     <div class="insight-item">
       <div class="insight-rank">${i + 1}</div>
       <div class="insight-content">
@@ -2946,47 +2930,17 @@ function generateInsights(){
       </div>
     </div>
   `).join('');
-
-  grid.innerHTML = html;
-  console.log('✅ Rendered', grid.children.length, 'insights');
-  console.log('=== RENDER COMPLETE ===');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-console.log('=== INIT START ===');
-try {
-  buildKPIs();
-  console.log('✓ buildKPIs done');
-  buildTrend();
-  console.log('✓ buildTrend done');
-  buildPlat();
-  console.log('✓ buildPlat done');
-  buildShare();
-  console.log('✓ buildShare done');
-  buildCtry();
-  console.log('✓ buildCtry done');
-  buildCtryTable();
-  console.log('✓ buildCtryTable done');
-  buildTimeline();
-  console.log('✓ buildTimeline done');
-  generateInsights();
-  console.log('✓ generateInsights done');
-} catch(e) {
-  console.error('ERROR during init:', e);
-  alert('JavaScript Error: ' + e.message);
-}
-
-// Direct test - no setTimeout
-console.log('=== DIRECT TEST ===');
-const directTestGrid = document.getElementById('insightsGrid');
-if(directTestGrid){
-  console.log('✓ Found insightsGrid');
-  directTestGrid.innerHTML = '<div style="padding:20px;background:lime;color:black;font-weight:bold;font-size:18px">✅ DIRECT TEST SUCCESS! JavaScript executed. Grid element found and writable. Check console for generateInsights() logs.</div>';
-  console.log('✓ Wrote green test box');
-} else {
-  console.error('✗ insightsGrid NOT FOUND');
-  alert('ERROR: insightsGrid element not found!');
-}
+buildKPIs();
+buildTrend();
+buildPlat();
+buildShare();
+buildCtry();
+buildCtryTable();
+buildTimeline();
+generateInsights();
 </script>
 </body>
 </html>
