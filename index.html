@@ -1665,7 +1665,6 @@ function buildTrend(){
   let months, src;
 
   if (GRANULARITY === 'weekly') {
-    // 周度模式：Downloads 和 WAU
     if (trendMode === 'dl') {
       months = WEEKLY_DATA.dl_weeks.length > 0 ? WEEKLY_DATA.dl_weeks : DATA.dl_months;
       src = WEEKLY_DATA.dl_weeks.length > 0 ? WEEKLY_DATA.dl : DATA.dl;
@@ -1673,22 +1672,25 @@ function buildTrend(){
       months = WEEKLY_DATA.wau_weeks.length > 0 ? WEEKLY_DATA.wau_weeks : DATA.wau_months;
       src = WEEKLY_DATA.wau_weeks.length > 0 ? WEEKLY_DATA.wau : DATA.wau;
     } else {
-      // MAU 在周度模式下不显示，使用月度数据
       months = DATA.mau_months;
       src = DATA.mau;
     }
+
+    // Filter out incomplete week for weekly mode
+    if(months.length > 0 && isWeekIncomplete(months[months.length - 1])){
+      months = months.slice(0, -1);
+      const filteredSrc = {};
+      APPS.forEach(app => {
+        filteredSrc[app] = src[app].slice(0, -1);
+      });
+      src = filteredSrc;
+    }
   } else {
-    // 月度模式：使用 DATA
     months = trendMode==='dl' ? DATA.dl_months : (trendMode==='mau' ? DATA.mau_months : DATA.wau_months);
     src    = trendMode==='dl' ? DATA.dl : (trendMode==='mau' ? DATA.mau : DATA.wau);
   }
 
   const labels = months.map(shortLabel);
-
-  // Check if last data point is incomplete (for weekly mode)
-  const lastWeekIncomplete = (GRANULARITY === 'weekly' && months.length > 0 && isWeekIncomplete(months[months.length - 1]));
-
-  // Build datasets with dashed line for incomplete week
   const datasets = APPS.filter(app => VISIBLE_APPS[app]).map(app => ({
     label: C[app].label,
     data: src[app],
@@ -1697,41 +1699,35 @@ function buildTrend(){
     fill: true,
     tension: .4,
     pointRadius: 2,
-    borderWidth: 2,
-    segment: lastWeekIncomplete ? {
-      borderDash: ctx => {
-        // Use dashed line for the last segment only
-        return ctx.p1DataIndex === src[app].length - 1 ? [5, 5] : undefined;
-      }
-    } : undefined
+    borderWidth: 2
   }));
 
-  // Build event annotations
+  // Build event annotations (ONLY for weekly mode)
   const annotations = {};
-  Object.keys(PRODUCT_LAUNCHES).forEach(monthKey => {
-    const monthIndex = months.indexOf(monthKey);
-    if(monthIndex >= 0){
-      const event = PRODUCT_LAUNCHES[monthKey];
-      annotations['event_' + monthKey] = {
-        type: 'line',
-        xMin: monthIndex,
-        xMax: monthIndex,
-        borderColor: event.color,
-        borderWidth: 2,
-        borderDash: [3, 3],
-        label: {
-          display: true,
-          content: event.event,
-          position: 'start',
-          backgroundColor: event.color,
+  if(GRANULARITY === 'weekly'){
+    Object.keys(MAJOR_EVENTS).forEach(eventDate => {
+      const closestWeek = findClosestWeek(eventDate, months);
+      if(closestWeek){
+        const weekIndex = months.indexOf(closestWeek);
+        const event = MAJOR_EVENTS[eventDate];
+        annotations['event_' + eventDate] = {
+          type: 'label',
+          xValue: weekIndex,
+          yValue: 'max',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          borderColor: event.color,
+          borderWidth: 1,
+          borderRadius: 4,
+          content: event.short,
           color: 'white',
-          font: { size: 9, weight: 'bold' },
-          padding: 4,
-          rotation: 0
-        }
-      };
-    }
-  });
+          font: { size: 9, weight: '600' },
+          padding: { x: 5, y: 2 },
+          position: 'start',
+          yAdjust: -5
+        };
+      }
+    });
+  }
 
   const ctx = document.getElementById('trendChart').getContext('2d');
   if(trendChart) trendChart.destroy();
@@ -1801,40 +1797,10 @@ function buildPlat(){
   document.getElementById('platSub').textContent =
     metricLabel+' – '+(platApp==='chatgpt'?'ChatGPT':platApp==='gemini'?'Google Gemini':'Claude');
   const col = C[platApp].color;
-  // 使用明显不同的颜色：iOS 用主色，Android 用对比色
   const iosColor = col;
   const androidColor = col === '#10a37f' ? '#14b8a6' :
                        col === '#4285F4' ? '#60a5fa' :
-                       '#fb923c'; // chatgpt绿->青绿, gemini蓝->天蓝, claude橙->亮橙
-
-  // Build event annotations
-  const annotations = {};
-  Object.keys(PRODUCT_LAUNCHES).forEach(monthKey => {
-    const monthIndex = months.indexOf(monthKey);
-    if(monthIndex >= 0){
-      const event = PRODUCT_LAUNCHES[monthKey];
-      // Only show annotation if it's relevant to current app
-      if(event.app === platApp){
-        annotations['event_' + monthKey] = {
-          type: 'line',
-          xMin: monthIndex,
-          xMax: monthIndex,
-          borderColor: event.color,
-          borderWidth: 1.5,
-          borderDash: [3, 3],
-          label: {
-            display: true,
-            content: event.event,
-            position: 'start',
-            backgroundColor: event.color,
-            color: 'white',
-            font: { size: 8, weight: 'bold' },
-            padding: 3
-          }
-        };
-      }
-    }
-  });
+                       '#fb923c';
 
   const ctx = document.getElementById('platChart').getContext('2d');
   if(platChart) platChart.destroy();
@@ -1852,10 +1818,7 @@ function buildPlat(){
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
-        tooltip:{callbacks:{label:i=>' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'M'}},
-        annotation: {
-          annotations: annotations
-        }
+        tooltip:{callbacks:{label:i=>' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'M'}}
       },
       scales:{
         x:{stacked:true,grid:gridCfg,ticks:{maxTicksLimit:13,font:{size:10}}},
@@ -1885,32 +1848,6 @@ function buildShare(){
   const src    = shareMetric==='dl' ? DATA.dl_share : (shareMetric==='mau' ? DATA.mau_share : DATA.wau_share);
   const labels = months.map(shortLabel);
 
-  // Build event annotations
-  const annotations = {};
-  Object.keys(PRODUCT_LAUNCHES).forEach(monthKey => {
-    const monthIndex = months.indexOf(monthKey);
-    if(monthIndex >= 0){
-      const event = PRODUCT_LAUNCHES[monthKey];
-      annotations['event_' + monthKey] = {
-        type: 'line',
-        xMin: monthIndex,
-        xMax: monthIndex,
-        borderColor: event.color,
-        borderWidth: 1.5,
-        borderDash: [3, 3],
-        label: {
-          display: true,
-          content: event.event,
-          position: 'start',
-          backgroundColor: event.color,
-          color: 'white',
-          font: { size: 8, weight: 'bold' },
-          padding: 3
-        }
-      };
-    }
-  });
-
   const ctx = document.getElementById('shareChart').getContext('2d');
   if(shareChart) shareChart.destroy();
   shareChart = new Chart(ctx,{
@@ -1933,10 +1870,7 @@ function buildShare(){
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
-        tooltip:{callbacks:{label:i=>' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'%'}},
-        annotation: {
-          annotations: annotations
-        }
+        tooltip:{callbacks:{label:i=>' '+i.dataset.label+': '+i.parsed.y.toFixed(1)+'%'}}
       },
       scales:{
         x:{grid:gridCfg,ticks:{maxTicksLimit:13,font:{size:10}}},
@@ -2477,21 +2411,42 @@ function downloadTemplate(type){
   URL.revokeObjectURL(url);
 }
 
-// ── Generate Insights ─────────────────────────────────────────────────────────
-// Product launch timeline (for context)
-const PRODUCT_LAUNCHES = {
-  '2024-02': { app: 'gemini', event: 'Gemini Launch', color: '#4285F4' },
-  '2024-05': { app: 'chatgpt', event: 'GPT-4o', color: '#10a37f' },
-  '2025-09': { app: 'gemini', event: 'Gemini Update', color: '#4285F4' },
-  '2026-02': { app: 'claude', event: 'Claude Update', color: '#e8834a' }
+// ── Major Events Timeline (for weekly charts) ────────────────────────────────
+const MAJOR_EVENTS = {
+  '2024-02-08': { app: 'gemini', event: 'Gemini Launch', color: '#4285F4', short: 'Gemini' },
+  '2024-05-13': { app: 'chatgpt', event: 'GPT-4o', color: '#10a37f', short: 'GPT-4o' },
+  '2024-06-23': { app: 'claude', event: 'Claude 3.5', color: '#e8834a', short: 'Claude 3.5' },
+  '2024-07-25': { app: 'chatgpt', event: 'SearchGPT', color: '#10a37f', short: 'SearchGPT' },
+  '2025-01-31': { app: 'chatgpt', event: 'o3-mini', color: '#10a37f', short: 'o3-mini' },
+  '2025-04-16': { app: 'chatgpt', event: 'o3 & o4-mini', color: '#10a37f', short: 'o3' },
+  '2025-06-10': { app: 'chatgpt', event: 'o3-pro', color: '#10a37f', short: 'o3-pro' },
+  '2025-09-08': { app: 'chatgpt', event: '700M Users', color: '#10a37f', short: '700M' },
+  '2025-11-18': { app: 'gemini', event: 'Gemini 3 Pro', color: '#4285F4', short: 'Gemini 3' },
+  '2025-11-24': { app: 'claude', event: 'Opus 4.5', color: '#e8834a', short: 'Opus 4.5' },
+  '2025-12-11': { app: 'chatgpt', event: 'GPT-5.2', color: '#10a37f', short: 'GPT-5.2' },
+  '2026-03-11': { app: 'chatgpt', event: 'GPT-5.3/5.4', color: '#10a37f', short: 'GPT-5.3' }
 };
 
-// Check if a week is incomplete (not ended yet)
+// Find closest week for an event date
+function findClosestWeek(dateString, weeksList){
+  const targetDate = new Date(dateString);
+  let closestWeek = null;
+  let minDiff = Infinity;
+  weeksList.forEach(week => {
+    const weekDate = new Date(week);
+    const diff = Math.abs(weekDate - targetDate);
+    if(diff < minDiff && diff < 7 * 24 * 60 * 60 * 1000){ // Within 7 days
+      minDiff = diff;
+      closestWeek = week;
+    }
+  });
+  return closestWeek;
+}
+
+// Check if a week is incomplete
 function isWeekIncomplete(weekString){
-  // weekString format: "2026-03-16" (represents week ending on that date)
   const weekEndDate = new Date(weekString + 'T00:00:00');
   const today = new Date();
-  // If week end date is in the future or is today, it's incomplete
   return weekEndDate >= today;
 }
 
