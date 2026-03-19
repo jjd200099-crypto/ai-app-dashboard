@@ -2953,27 +2953,40 @@ function generateInsights(){
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-buildKPIs();
-buildTrend();
-buildPlat();
-buildShare();
-buildCtry();
-buildCtryTable();
-buildTimeline();
-generateInsights();
+console.log('=== INIT START ===');
+try {
+  buildKPIs();
+  console.log('✓ buildKPIs done');
+  buildTrend();
+  console.log('✓ buildTrend done');
+  buildPlat();
+  console.log('✓ buildPlat done');
+  buildShare();
+  console.log('✓ buildShare done');
+  buildCtry();
+  console.log('✓ buildCtry done');
+  buildCtryTable();
+  console.log('✓ buildCtryTable done');
+  buildTimeline();
+  console.log('✓ buildTimeline done');
+  generateInsights();
+  console.log('✓ generateInsights done');
+} catch(e) {
+  console.error('ERROR during init:', e);
+  alert('JavaScript Error: ' + e.message);
+}
 
-// Force test - add a simple insight directly
-setTimeout(function(){
-  console.log('=== FORCE TEST ===');
-  const testGrid = document.getElementById('insightsGrid');
-  if(testGrid){
-    console.log('Found insightsGrid element');
-    testGrid.innerHTML = '<div style="padding:20px;background:lime;color:black;font-weight:bold">✅ SUCCESS! JavaScript CAN write to this element. If you see this green box, generateInsights() needs debugging.</div>';
-    console.log('Wrote test content to insightsGrid');
-  } else {
-    console.error('insightsGrid NOT FOUND in setTimeout');
-  }
-}, 1000);
+// Direct test - no setTimeout
+console.log('=== DIRECT TEST ===');
+const directTestGrid = document.getElementById('insightsGrid');
+if(directTestGrid){
+  console.log('✓ Found insightsGrid');
+  directTestGrid.innerHTML = '<div style="padding:20px;background:lime;color:black;font-weight:bold;font-size:18px">✅ DIRECT TEST SUCCESS! JavaScript executed. Grid element found and writable. Check console for generateInsights() logs.</div>';
+  console.log('✓ Wrote green test box');
+} else {
+  console.error('✗ insightsGrid NOT FOUND');
+  alert('ERROR: insightsGrid element not found!');
+}
 </script>
 </body>
 </html>
