@@ -2628,48 +2628,52 @@ function generateInsights(){
 
     if(mauShares.length === 3){
       const third = mauShares[2];
+      const totalUsers = leader.mau + runner.mau + third.mau;
       insights.push({
-        text: `Market structure (${currentMonth}): ${C[leader.app].label} dominates ${leader.share.toFixed(1)}%, ${C[runner.app].label} holds ${runner.share.toFixed(1)}%, ${C[third.app].label} at ${third.share.toFixed(1)}%`,
+        text: `Market structure (${currentMonth}): ${C[leader.app].label} dominates with ${leader.share.toFixed(1)}% market share (${leader.mau.toFixed(0)}M users), ${C[runner.app].label} holds runner-up position at ${runner.share.toFixed(1)}% (${runner.mau.toFixed(0)}M), while ${C[third.app].label} maintains ${third.share.toFixed(1)}% (${third.mau.toFixed(0)}M). Total market size: ${totalUsers.toFixed(0)}M MAU. This ${leader.share.toFixed(0)}-${runner.share.toFixed(0)}-${third.share.toFixed(0)} distribution shows ${gap > 40 ? 'highly concentrated' : 'moderately competitive'} market with ${C[leader.app].label} holding ${gap > 50 ? 'near-monopoly' : 'dominant'} position.`,
         type: 'share',
-        priority: 65
+        priority: 70
       });
     }
 
-    // Gap narrowing/widening analysis
-    if(Math.abs(gapChange) > 1 && lastMonthIdx >= 1){
+    // Competitive dynamics analysis
+    if(Math.abs(gapChange) > 0.5 && lastMonthIdx >= 1){
+      const rateOfChange = (gapChange / prevGap * 100);
       if(gapChange > 0){
         insights.push({
-          text: `${C[runner.app].label} closing in: narrowed ${C[leader.app].label}'s lead by ${gapChange.toFixed(1)}pp this month (now ${gap.toFixed(1)}pp gap, was ${prevGap.toFixed(1)}pp)`,
+          text: `${C[runner.app].label} mounting challenge: Narrowed ${C[leader.app].label}'s lead by ${gapChange.toFixed(1)}pp this month (gap reduced from ${prevGap.toFixed(1)}pp to ${gap.toFixed(1)}pp, ${Math.abs(rateOfChange).toFixed(1)}% compression). At current pace, ${C[runner.app].label} could close ${(gapChange * 12).toFixed(0)}pp over next year. This aggressive gain suggests ${C[runner.app].label} is executing effectively on product improvements and user acquisition.`,
           type: 'share',
-          priority: 52
+          priority: 58
         });
       } else {
         insights.push({
-          text: `${C[leader.app].label} extending dominance: widened lead over ${C[runner.app].label} by ${Math.abs(gapChange).toFixed(1)}pp this month (now ${gap.toFixed(1)}pp gap)`,
+          text: `${C[leader.app].label} pulling away: Extended lead over ${C[runner.app].label} by ${Math.abs(gapChange).toFixed(1)}pp this month (gap widened from ${prevGap.toFixed(1)}pp to ${gap.toFixed(1)}pp, ${Math.abs(rateOfChange).toFixed(1)}% expansion). This growing dominance indicates ${C[leader.app].label} is benefiting from network effects and brand strength, making it increasingly difficult for competitors to catch up.`,
           type: 'share',
-          priority: 52
+          priority: 58
         });
       }
     }
   }
 
-  // 6. Comparative Growth Rate Analysis (Q/Q)
+  // 6. Quarterly Growth Velocity Comparison
   if(lastMonthIdx >= 5){
     const growthRates = visibleApps.map(app => {
       const latest3Avg = (DATA.mau[app][lastMonthIdx] + DATA.mau[app][lastMonthIdx - 1] + DATA.mau[app][lastMonthIdx - 2]) / 3;
       const prev3Avg = (DATA.mau[app][lastMonthIdx - 3] + DATA.mau[app][lastMonthIdx - 4] + DATA.mau[app][lastMonthIdx - 5]) / 3;
       const growth = prev3Avg > 0 ? ((latest3Avg - prev3Avg) / prev3Avg * 100) : 0;
-      return { app, growth, latest3Avg };
+      const absGrowth = latest3Avg - prev3Avg;
+      return { app, growth, latest3Avg, absGrowth };
     }).sort((a, b) => b.growth - a.growth);
 
     if(growthRates.length >= 2){
       const fastest = growthRates[0];
       const slowest = growthRates[growthRates.length - 1];
+      const growthGap = fastest.growth - slowest.growth;
 
       insights.push({
-        text: `Growth race: ${C[fastest.app].label} leads Q/Q growth at ${fastest.growth > 0 ? '+' : ''}${fastest.growth.toFixed(1)}% vs ${C[slowest.app].label} at ${slowest.growth > 0 ? '+' : ''}${slowest.growth.toFixed(1)}%`,
+        text: `Quarterly growth velocity: ${C[fastest.app].label} demonstrates highest Q/Q growth at ${fastest.growth > 0 ? '+' : ''}${fastest.growth.toFixed(1)}% (adding ${fastest.absGrowth.toFixed(0)}M users, current 3-month avg: ${fastest.latest3Avg.toFixed(0)}M MAU), outpacing ${C[slowest.app].label} at ${slowest.growth > 0 ? '+' : ''}${slowest.growth.toFixed(1)}% (${slowest.absGrowth > 0 ? '+' : ''}${slowest.absGrowth.toFixed(0)}M users). This ${growthGap.toFixed(1)}pp growth differential indicates ${fastest.growth > 15 ? C[fastest.app].label + ' is in hypergrowth phase' : fastest.growth > 0 ? 'steady expansion' : 'market maturation'}, while ${C[slowest.app].label} ${slowest.growth < 0 ? 'faces user attrition' : slowest.growth < 5 ? 'shows limited growth' : 'grows steadily'}.`,
         type: fastest.growth > slowest.growth ? 'growth' : 'decline',
-        priority: 50
+        priority: 54
       });
     }
   }
@@ -2688,11 +2692,12 @@ function generateInsights(){
     }
   }
 
-  // 8. Comparative Geographic Strategy
+  // 8. Geographic Market Leadership Analysis
   if(DATA.top20 && DATA.top20.length >= 3){
     const geoMetrics = visibleApps.map(app => {
       const topMarket = DATA.top20[0];
       const topMarketDl = DATA.country_bar_dl[topMarket][app] || 0;
+      const topMarketMau = DATA.country_bar_mau[topMarket][app] || 0;
       let totalDl = 0;
       DATA.top20.forEach(code => {
         totalDl += DATA.country_bar_dl[code][app] || 0;
@@ -2700,19 +2705,19 @@ function generateInsights(){
       const topMarketShare = totalDl > 0 ? (topMarketDl / totalDl * 100) : 0;
       const topMarketName = DATA.country_names[topMarket];
 
-      return { app, topMarketName, topMarketShare, topMarketDl };
+      return { app, topMarketName, topMarketShare, topMarketDl, topMarketMau };
     });
 
-    // Find who dominates India (top market)
     if(geoMetrics.length >= 2){
       geoMetrics.sort((a, b) => b.topMarketDl - a.topMarketDl);
       const strongest = geoMetrics[0];
       const weakest = geoMetrics[geoMetrics.length - 1];
+      const marketDominance = strongest.topMarketDl / weakest.topMarketDl;
 
       insights.push({
-        text: `${strongest.topMarketName} battle: ${C[strongest.app].label} leads with ${strongest.topMarketDl.toFixed(1)}M downloads vs ${C[weakest.app].label} ${weakest.topMarketDl.toFixed(1)}M`,
+        text: `${strongest.topMarketName} market dominance: ${C[strongest.app].label} commands ${strongest.topMarketDl.toFixed(1)}M downloads (${strongest.topMarketShare.toFixed(0)}% of its global total) with ${strongest.topMarketMau.toFixed(0)}M MAU, ${marketDominance.toFixed(1)}x ahead of ${C[weakest.app].label}'s ${weakest.topMarketDl.toFixed(1)}M downloads. ${C[strongest.app].label}'s stronghold in the world's largest AI market provides significant network effects and data advantages, while ${C[weakest.app].label}'s weaker ${strongest.topMarketName} presence (only ${weakest.topMarketShare.toFixed(0)}% of global volume) limits growth potential.`,
         type: 'geo',
-        priority: 40
+        priority: 46
       });
     }
   }
@@ -2740,23 +2745,25 @@ function generateInsights(){
     }
   }
 
-  // 10. Comparative Download-to-MAU Efficiency
+  // 10. User Economics & LTV Indicators
   const efficiencyMetrics = visibleApps.map(app => {
     const dl = DATA.dl[app][lastMonthIdx];
     const mau = DATA.mau[app][lastMonthIdx];
     const ratio = dl > 0 ? (mau / dl) : 0;
-    return { app, ratio, dl, mau };
+    const retentionImplied = ratio > 20 ? 'excellent' : ratio > 12 ? 'strong' : ratio > 8 ? 'moderate' : 'weak';
+    return { app, ratio, dl, mau, retentionImplied };
   }).filter(a => a.ratio > 0);
 
   if(efficiencyMetrics.length >= 2){
     efficiencyMetrics.sort((a, b) => b.ratio - a.ratio);
     const best = efficiencyMetrics[0];
     const worst = efficiencyMetrics[efficiencyMetrics.length - 1];
+    const efficiencyGap = best.ratio / worst.ratio;
 
     insights.push({
-      text: `User stickiness: ${C[best.app].label} achieves ${best.ratio.toFixed(1)}x MAU/DL ratio (${best.mau.toFixed(0)}M/${best.dl.toFixed(1)}M) vs ${C[worst.app].label} ${worst.ratio.toFixed(1)}x`,
+      text: `User lifetime value indicators: ${C[best.app].label} demonstrates ${best.retentionImplied} retention with ${best.ratio.toFixed(1)}x MAU/Downloads ratio (${best.mau.toFixed(0)}M active users from ${best.dl.toFixed(1)}M monthly downloads), suggesting users stay active for ${(best.ratio * 30).toFixed(0)} days on average. ${C[worst.app].label} shows ${worst.retentionImplied} retention at ${worst.ratio.toFixed(1)}x (${worst.mau.toFixed(0)}M/${worst.dl.toFixed(1)}M), implying ~${(worst.ratio * 30).toFixed(0)} day average engagement. This ${efficiencyGap.toFixed(1)}x retention efficiency gap translates directly to ${efficiencyGap.toFixed(1)}x higher potential LTV for ${C[best.app].label}, making it far more attractive for monetization strategies.`,
       type: best.ratio > worst.ratio * 1.5 ? 'growth' : 'share',
-      priority: 44
+      priority: 48
     });
   }
 
